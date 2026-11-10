@@ -1,0 +1,52 @@
+[
+    {
+        "id": 1,
+        "question": "What is polymorphism in object oriented programming?",
+        "reference_answer": "Polymorphism allows the same interface or method to behave differently for different objects."
+    },
+    {
+        "id": 2,
+        "question": "What is inheritance in object oriented programming?",
+        "reference_answer": "Inheritance allows a class to acquire properties and methods from another class."
+    },
+    {
+        "id": 3,
+        "question": "What is encapsulation?",
+        "reference_answer": "Encapsulation is the concept of bundling data and methods together and restricting direct access to internal data."
+    },
+    {
+        "id": 4,
+        "question": "What is abstraction?",
+        "reference_answer": "Abstraction hides unnecessary implementation details and exposes only the essential functionality."
+    },
+    {
+        "id": 5,
+        "question": "What is a primary key in a database?",
+        "reference_answer": "A primary key uniquely identifies each record in a database table."
+    },
+    {
+        "id": 6,
+        "question": "What is normalization in a database?",
+        "reference_answer": "Normalization organizes database data to reduce redundancy and improve data integrity."
+    },
+    {
+        "id": 7,
+        "question": "What is an API?",
+        "reference_answer": "An API is an interface that allows different software applications to communicate with each other."
+    },
+    {
+        "id": 8,
+        "question": "What is REST API?",
+        "reference_answer": "A REST API is an API that follows REST architectural principles and commonly uses HTTP methods to operate on resources."
+    },
+    {
+        "id": 9,
+        "question": "What is machine learning?",
+        "reference_answer": "Machine learning is a method where computers learn patterns from data to make predictions or decisions."
+    },
+    {
+        "id": 10,
+        "question": "What is overfitting in machine learning?",
+        "reference_answer": "Overfitting occurs when a model learns the training data too closely and performs poorly on unseen data."
+    }
+]

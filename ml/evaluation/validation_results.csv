@@ -1,0 +1,9 @@
+accuracy,precision,recall,f1_score,macro_f1,weighted_f1,roc_auc,pr_auc,experiment,model
+0.8593,0.0,0.0,0.0,0.4622,0.7942,0.5,0.1407,Experiment A (Full Features),Baseline (Dummy)
+0.9778,0.9211,0.9211,0.9211,0.9541,0.9778,0.9967,0.9723,Experiment A (Full Features),KNN Classifier
+0.9926,1.0,0.9474,0.973,0.9843,0.9925,0.9991,0.9952,Experiment A (Full Features),SVM Classifier
+1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,Experiment A (Full Features),Decision Tree
+0.8593,0.0,0.0,0.0,0.4622,0.7942,0.5,0.1407,Experiment B (Feature Ablation),Baseline (Dummy)
+0.8704,0.56,0.3684,0.4444,0.6855,0.8588,0.7742,0.3936,Experiment B (Feature Ablation),KNN Classifier
+0.7037,0.2857,0.7368,0.4118,0.6069,0.7471,0.7886,0.3521,Experiment B (Feature Ablation),SVM Classifier
+0.8704,0.5306,0.6842,0.5977,0.7602,0.877,0.8455,0.5066,Experiment B (Feature Ablation),Decision Tree

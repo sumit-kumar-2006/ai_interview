@@ -1,0 +1,10 @@
+split,cluster,target_0_count,target_1_count,total,target_0_pct,target_1_pct,ari,nmi
+Train,Cluster 0,206,117,323,63.78,36.22,0.0578,0.1119
+Train,Cluster 1,325,0,325,100.0,0.0,0.0578,0.1119
+Train,Cluster 2,554,62,616,89.94,10.06,0.0578,0.1119
+Val,Cluster 0,42,26,68,61.76,38.24,0.0669,0.1262
+Val,Cluster 1,78,0,78,100.0,0.0,0.0669,0.1262
+Val,Cluster 2,112,12,124,90.32,9.68,0.0669,0.1262
+Test,Cluster 0,39,21,60,65.0,35.0,0.0387,0.0914
+Test,Cluster 1,63,0,63,100.0,0.0,0.0387,0.0914
+Test,Cluster 2,129,20,149,86.58,13.42,0.0387,0.0914

@@ -1,0 +1,26 @@
+[
+    {
+        "video": "--Ymqszjv54.005.txt",
+        "question_id": 7,
+        "question": "What is an API?",
+        "reference_answer": "An API is an interface that allows different software applications to communicate with each other.",
+        "candidate_answer": "So, yeah, this one, because this doesn't have a name on it. So, this is from O-H, O-H, and what's your name? So, my name is Austin, well, my name is Austin.",
+        "question_match": 1.0
+    },
+    {
+        "video": "-8asrRvfJWA.003.txt",
+        "question_id": 8,
+        "question": "What is REST API?",
+        "reference_answer": "A REST API is an API that follows REST architectural principles and commonly uses HTTP methods to operate on resources.",
+        "candidate_answer": "I gave her a medicine yesterday, a painkiller, that she's allergic to, and I'm actually allergic to, and she got really sick, and I know the feeling of her both allergic to it. I'm like, she told me not to come to the hospital, she told me and my older brother not to come to the hospital yesterday, because she wants a rest, but today, I'm about to snap some necks, and...",
+        "question_match": 0.5
+    },
+    {
+        "video": "-9BZ8A9U7TE.004.txt",
+        "question_id": 7,
+        "question": "What is an API?",
+        "reference_answer": "An API is an interface that allows different software applications to communicate with each other.",
+        "candidate_answer": "was what's your favorite songs at the moment I'm actually loving two songs and they are downtown of Mackamon, Ryan Lewis and also late all on me by Ed Sheeran I'm loving their song at the moment mainly because downtown has a",
+        "question_match": 1.0
+    }
+]

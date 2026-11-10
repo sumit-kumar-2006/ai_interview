@@ -1,0 +1,7 @@
+,semantic_similarity,lexical_overlap,word_count,unique_word_ratio,avg_word_length,target_label
+semantic_similarity,1.0,0.555,0.3284,-0.1071,0.0884,0.341
+lexical_overlap,0.555,1.0,0.2576,-0.2281,0.024,0.2412
+word_count,0.3284,0.2576,1.0,-0.307,-0.2436,0.5673
+unique_word_ratio,-0.1071,-0.2281,-0.307,1.0,0.327,-0.227
+avg_word_length,0.0884,0.024,-0.2436,0.327,1.0,-0.0901
+target_label,0.341,0.2412,0.5673,-0.227,-0.0901,1.0

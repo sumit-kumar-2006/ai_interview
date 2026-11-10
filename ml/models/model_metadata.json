@@ -1,0 +1,126 @@
+{
+    "project": "AI Interview Analyzer",
+    "module": "Academic Machine Learning Classification (Part A Step 4)",
+    "date_trained": "2026-11-05",
+    "algorithms": {
+        "KNN": {
+            "artifact": "knn_model.pkl",
+            "features": [
+                "semantic_similarity_scaled",
+                "lexical_overlap_scaled",
+                "word_count_scaled",
+                "unique_word_ratio_scaled",
+                "avg_word_length_scaled"
+            ],
+            "best_hyperparameters": {
+                "n_neighbors": 9,
+                "weights": "uniform",
+                "metric": "manhattan",
+                "val_macro_f1": 0.9541
+            },
+            "test_metrics": {
+                "accuracy": 0.9596,
+                "precision": 0.875,
+                "recall": 0.8537,
+                "f1_score": 0.8642,
+                "macro_f1": 0.9202,
+                "weighted_f1": 0.9594,
+                "roc_auc": 0.9906,
+                "pr_auc": 0.9341,
+                "experiment": "Experiment A (Full Features)",
+                "model": "KNN Classifier"
+            }
+        },
+        "SVM": {
+            "artifact": "svm_model.pkl",
+            "features": [
+                "semantic_similarity_scaled",
+                "lexical_overlap_scaled",
+                "word_count_scaled",
+                "unique_word_ratio_scaled",
+                "avg_word_length_scaled"
+            ],
+            "best_hyperparameters": {
+                "kernel": "rbf",
+                "C": 10.0,
+                "class_weight": "None",
+                "val_macro_f1": 0.9843
+            },
+            "test_metrics": {
+                "accuracy": 0.9706,
+                "precision": 1.0,
+                "recall": 0.8049,
+                "f1_score": 0.8919,
+                "macro_f1": 0.9374,
+                "weighted_f1": 0.9692,
+                "roc_auc": 0.9984,
+                "pr_auc": 0.9907,
+                "experiment": "Experiment A (Full Features)",
+                "model": "SVM Classifier"
+            }
+        },
+        "DecisionTree": {
+            "artifact": "decision_tree_model.pkl",
+            "features": [
+                "semantic_similarity",
+                "lexical_overlap",
+                "word_count",
+                "unique_word_ratio",
+                "avg_word_length"
+            ],
+            "best_hyperparameters": {
+                "max_depth": 3,
+                "min_samples_split": 2,
+                "min_samples_leaf": 1,
+                "class_weight": "None",
+                "val_macro_f1": 1.0
+            },
+            "test_metrics": {
+                "accuracy": 1.0,
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1_score": 1.0,
+                "macro_f1": 1.0,
+                "weighted_f1": 1.0,
+                "roc_auc": 1.0,
+                "pr_auc": 1.0,
+                "experiment": "Experiment A (Full Features)",
+                "model": "Decision Tree"
+            }
+        }
+    },
+    "scaler": "ml/models/academic_scaler.pkl",
+    "vif_analysis": [
+        {
+            "feature": "semantic_similarity",
+            "r_squared": 0.3629,
+            "vif": 1.5695,
+            "multicollinearity_status": "Low (Safe)"
+        },
+        {
+            "feature": "lexical_overlap",
+            "r_squared": 0.3396,
+            "vif": 1.5142,
+            "multicollinearity_status": "Low (Safe)"
+        },
+        {
+            "feature": "word_count",
+            "r_squared": 0.2215,
+            "vif": 1.2845,
+            "multicollinearity_status": "Low (Safe)"
+        },
+        {
+            "feature": "unique_word_ratio",
+            "r_squared": 0.1957,
+            "vif": 1.2433,
+            "multicollinearity_status": "Low (Safe)"
+        },
+        {
+            "feature": "avg_word_length",
+            "r_squared": 0.1643,
+            "vif": 1.1966,
+            "multicollinearity_status": "Low (Safe)"
+        }
+    ],
+    "academic_disclosure": "Target Leakage Warning: In Experiment A, the target_label was defined using semantic_similarity >= 0.70 and word_count >= 20. Decision Tree perfectly captures this rectangular partition. In Experiment B, removing these features reduces macro F1 to realistic baseline levels, confirming that Experiment A demonstrates proxy rule learning."
+}

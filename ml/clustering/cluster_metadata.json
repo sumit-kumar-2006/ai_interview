@@ -1,0 +1,100 @@
+{
+  "algorithm": "KMeans",
+  "optimal_k": 3,
+  "random_state": 42,
+  "n_init": 10,
+  "max_iter": 300,
+  "iterations_to_converge": 12,
+  "inertia": 3831.5595,
+  "silhouette_score": 0.2311,
+  "feature_names": [
+    "semantic_similarity",
+    "lexical_overlap",
+    "word_count",
+    "unique_word_ratio",
+    "avg_word_length"
+  ],
+  "scaler_path": "ml/models/academic_scaler.pkl",
+  "cluster_centers_scaled": [
+    [
+      0.450954253634306,
+      0.5656879847652547,
+      0.8366160740234365,
+      -1.07556857530764,
+      -0.7967519390734474
+    ],
+    [
+      -1.300907239155957,
+      -1.023100068242695,
+      -0.6749661431136951,
+      0.2334987049055933,
+      -0.19340157171413372
+    ],
+    [
+      0.44989883801529873,
+      0.24368880240593788,
+      -0.08108003131863022,
+      0.4383241526008763,
+      0.5176817426073653
+    ]
+  ],
+  "cluster_centers_unscaled": [
+    [
+      0.7172863354037267,
+      0.14424534161490682,
+      20.043478260869566,
+      0.8681180124223602,
+      5.523012422360249
+    ],
+    [
+      0.4483458461538461,
+      0.03911723076923074,
+      15.350769230769231,
+      0.9562215384615385,
+      6.124492307692308
+    ],
+    [
+      0.7171243111831442,
+      0.12293905996758508,
+      17.19448946515397,
+      0.9700068071312804,
+      6.833371150729335
+    ]
+  ],
+  "split_counts": {
+    "train": {
+      "Cluster 0": 323,
+      "Cluster 1": 325,
+      "Cluster 2": 616
+    },
+    "val": {
+      "Cluster 0": 68,
+      "Cluster 1": 78,
+      "Cluster 2": 124
+    },
+    "test": {
+      "Cluster 0": 60,
+      "Cluster 1": 63,
+      "Cluster 2": 149
+    }
+  },
+  "academic_contingency_metrics": {
+    "Train": {
+      "ARI": 0.0578,
+      "NMI": 0.1119
+    },
+    "Val": {
+      "ARI": 0.0669,
+      "NMI": 0.1262
+    },
+    "Test": {
+      "ARI": 0.0387,
+      "NMI": 0.0914
+    }
+  },
+  "neutral_cluster_descriptions": {
+    "Cluster 0": "Cluster 0 - Extended / Substantive (Highest word count [20.0], highest lexical overlap [0.144], high semantic similarity [0.718], natural word repetition)",
+    "Cluster 1": "Cluster 1 - Low Alignment / Divergent (Lowest semantic similarity [0.448], lowest lexical overlap [0.039], shortest word count [15.35], 0% Class 1)",
+    "Cluster 2": "Cluster 2 - Concise Technical (High semantic similarity [0.717], highest average word length [6.83], highest unique word ratio [0.970], moderate length [17.2])"
+  }
+}

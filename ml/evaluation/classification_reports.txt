@@ -1,0 +1,91 @@
+ACADEMIC CLASSIFICATION REPORTS (TEST SET EVALUATION)
+=================================================================
+
+=== Experiment A (Full Features) | Baseline (Dummy) (Test Set) ===
+                   precision    recall  f1-score   support
+
+Needs Improvement     0.8493    1.0000    0.9185       231
+       Proficient     0.0000    0.0000    0.0000        41
+
+         accuracy                         0.8493       272
+        macro avg     0.4246    0.5000    0.4592       272
+     weighted avg     0.7213    0.8493    0.7800       272
+
+
+=== Experiment A (Full Features) | KNN Classifier (Test Set) ===
+                   precision    recall  f1-score   support
+
+Needs Improvement     0.9741    0.9784    0.9762       231
+       Proficient     0.8750    0.8537    0.8642        41
+
+         accuracy                         0.9596       272
+        macro avg     0.9246    0.9160    0.9202       272
+     weighted avg     0.9592    0.9596    0.9594       272
+
+
+=== Experiment A (Full Features) | SVM Classifier (Test Set) ===
+                   precision    recall  f1-score   support
+
+Needs Improvement     0.9665    1.0000    0.9830       231
+       Proficient     1.0000    0.8049    0.8919        41
+
+         accuracy                         0.9706       272
+        macro avg     0.9833    0.9024    0.9374       272
+     weighted avg     0.9716    0.9706    0.9692       272
+
+
+=== Experiment A (Full Features) | Decision Tree (Test Set) ===
+                   precision    recall  f1-score   support
+
+Needs Improvement     1.0000    1.0000    1.0000       231
+       Proficient     1.0000    1.0000    1.0000        41
+
+         accuracy                         1.0000       272
+        macro avg     1.0000    1.0000    1.0000       272
+     weighted avg     1.0000    1.0000    1.0000       272
+
+
+=================================================================
+
+=== Experiment B (Feature Ablation) | Baseline (Dummy) (Test Set) ===
+                   precision    recall  f1-score   support
+
+Needs Improvement     0.8493    1.0000    0.9185       231
+       Proficient     0.0000    0.0000    0.0000        41
+
+         accuracy                         0.8493       272
+        macro avg     0.4246    0.5000    0.4592       272
+     weighted avg     0.7213    0.8493    0.7800       272
+
+
+=== Experiment B (Feature Ablation) | KNN Classifier (Test Set) ===
+                   precision    recall  f1-score   support
+
+Needs Improvement     0.8599    0.9567    0.9057       231
+       Proficient     0.3333    0.1220    0.1786        41
+
+         accuracy                         0.8309       272
+        macro avg     0.5966    0.5393    0.5422       272
+     weighted avg     0.7805    0.8309    0.7961       272
+
+
+=== Experiment B (Feature Ablation) | SVM Classifier (Test Set) ===
+                   precision    recall  f1-score   support
+
+Needs Improvement     0.9141    0.6450    0.7563       231
+       Proficient     0.2477    0.6585    0.3600        41
+
+         accuracy                         0.6471       272
+        macro avg     0.5809    0.6518    0.5582       272
+     weighted avg     0.8137    0.6471    0.6966       272
+
+
+=== Experiment B (Feature Ablation) | Decision Tree (Test Set) ===
+                   precision    recall  f1-score   support
+
+Needs Improvement     0.9004    0.9394    0.9195       231
+       Proficient     0.5484    0.4146    0.4722        41
+
+         accuracy                         0.8603       272
+        macro avg     0.7244    0.6770    0.6959       272
+     weighted avg     0.8474    0.8603    0.8521       272

@@ -1,0 +1,6 @@
+feature,r_squared,vif,multicollinearity_status
+semantic_similarity,0.3629,1.5695,Low (Safe)
+lexical_overlap,0.3396,1.5142,Low (Safe)
+word_count,0.2215,1.2845,Low (Safe)
+unique_word_ratio,0.1957,1.2433,Low (Safe)
+avg_word_length,0.1643,1.1966,Low (Safe)

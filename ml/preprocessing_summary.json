@@ -1,0 +1,222 @@
+{
+    "pipeline_name": "Academic Dataset Preprocessing Pipeline",
+    "date_executed": "2026-11-05",
+    "splits": {
+        "train": {
+            "record_count": 1264,
+            "null_values": 0,
+            "duplicate_records": 0,
+            "class_distribution": {
+                "Needs Improvement (0)": 1085,
+                "Proficient (1)": 179,
+                "proficient_percentage": 14.16
+            },
+            "feature_statistics": {
+                "semantic_similarity": {
+                    "count": 1264.0,
+                    "mean": 0.6481,
+                    "std": 0.1536,
+                    "min": -0.0043,
+                    "25%": 0.5752,
+                    "50%": 0.6842,
+                    "75%": 0.7617,
+                    "max": 0.9128
+                },
+                "lexical_overlap": {
+                    "count": 1264.0,
+                    "mean": 0.1068,
+                    "std": 0.0662,
+                    "min": 0.0,
+                    "25%": 0.0526,
+                    "50%": 0.1053,
+                    "75%": 0.15,
+                    "max": 0.32
+                },
+                "word_count": {
+                    "count": 1264.0,
+                    "mean": 17.4462,
+                    "std": 3.1057,
+                    "min": 7.0,
+                    "25%": 15.0,
+                    "50%": 17.0,
+                    "75%": 19.0,
+                    "max": 35.0
+                },
+                "unique_word_ratio": {
+                    "count": 1264.0,
+                    "mean": 0.9405,
+                    "std": 0.0673,
+                    "min": 0.5,
+                    "25%": 0.9091,
+                    "50%": 0.9474,
+                    "75%": 1.0,
+                    "max": 1.0
+                },
+                "avg_word_length": {
+                    "count": 1264.0,
+                    "mean": 6.3173,
+                    "std": 0.9973,
+                    "min": 3.65,
+                    "25%": 5.65,
+                    "50%": 6.275,
+                    "75%": 7.0,
+                    "max": 12.71
+                }
+            }
+        },
+        "validation": {
+            "record_count": 270,
+            "null_values": 0,
+            "duplicate_records": 0,
+            "class_distribution": {
+                "Needs Improvement (0)": 232,
+                "Proficient (1)": 38,
+                "proficient_percentage": 14.07
+            },
+            "feature_statistics": {
+                "semantic_similarity": {
+                    "count": 270.0,
+                    "mean": 0.6383,
+                    "std": 0.1505,
+                    "min": 0.1227,
+                    "25%": 0.5307,
+                    "50%": 0.674,
+                    "75%": 0.7525,
+                    "max": 0.8762
+                },
+                "lexical_overlap": {
+                    "count": 270.0,
+                    "mean": 0.1077,
+                    "std": 0.0676,
+                    "min": 0.0,
+                    "25%": 0.0556,
+                    "50%": 0.1053,
+                    "75%": 0.1579,
+                    "max": 0.28
+                },
+                "word_count": {
+                    "count": 270.0,
+                    "mean": 17.337,
+                    "std": 3.208,
+                    "min": 10.0,
+                    "25%": 15.0,
+                    "50%": 17.0,
+                    "75%": 20.0,
+                    "max": 29.0
+                },
+                "unique_word_ratio": {
+                    "count": 270.0,
+                    "mean": 0.9425,
+                    "std": 0.0601,
+                    "min": 0.68,
+                    "25%": 0.9167,
+                    "50%": 0.9444,
+                    "75%": 1.0,
+                    "max": 1.0
+                },
+                "avg_word_length": {
+                    "count": 270.0,
+                    "mean": 6.2672,
+                    "std": 0.9256,
+                    "min": 4.15,
+                    "25%": 5.56,
+                    "50%": 6.27,
+                    "75%": 6.9375,
+                    "max": 8.3
+                }
+            }
+        },
+        "test": {
+            "record_count": 272,
+            "null_values": 0,
+            "duplicate_records": 0,
+            "class_distribution": {
+                "Needs Improvement (0)": 231,
+                "Proficient (1)": 41,
+                "proficient_percentage": 15.07
+            },
+            "feature_statistics": {
+                "semantic_similarity": {
+                    "count": 272.0,
+                    "mean": 0.6469,
+                    "std": 0.1473,
+                    "min": 0.1051,
+                    "25%": 0.5906,
+                    "50%": 0.6822,
+                    "75%": 0.7502,
+                    "max": 0.9005
+                },
+                "lexical_overlap": {
+                    "count": 272.0,
+                    "mean": 0.112,
+                    "std": 0.0628,
+                    "min": 0.0,
+                    "25%": 0.0616,
+                    "50%": 0.1176,
+                    "75%": 0.1538,
+                    "max": 0.2692
+                },
+                "word_count": {
+                    "count": 272.0,
+                    "mean": 17.6066,
+                    "std": 3.2819,
+                    "min": 11.0,
+                    "25%": 15.0,
+                    "50%": 17.0,
+                    "75%": 19.25,
+                    "max": 27.0
+                },
+                "unique_word_ratio": {
+                    "count": 272.0,
+                    "mean": 0.9393,
+                    "std": 0.0644,
+                    "min": 0.7083,
+                    "25%": 0.9,
+                    "50%": 0.9444,
+                    "75%": 1.0,
+                    "max": 1.0
+                },
+                "avg_word_length": {
+                    "count": 272.0,
+                    "mean": 6.308,
+                    "std": 0.9914,
+                    "min": 4.1,
+                    "25%": 5.6275,
+                    "50%": 6.37,
+                    "75%": 7.0,
+                    "max": 8.92
+                }
+            }
+        }
+    },
+    "target_variable": {
+        "name": "target_label / target_class",
+        "type": "Binary Classification",
+        "positive_condition": "semantic_similarity >= 0.70 AND word_count >= 20",
+        "negative_condition": "otherwise",
+        "nature": "Rule-derived provisional proxy label for academic classification feasibility; NOT a human-evaluated exam score."
+    },
+    "target_leakage_note": "Target Leakage Caveat: 'semantic_similarity' and 'word_count' are explicitly used in the condition establishing the proxy ground truth. While realistic for demonstrating classification models, metrics, confusion matrices, and ROC-AUC curves in university practicals, this mathematical dependency must be disclosed in all academic defense presentations.",
+    "scaler_fitted_parameters": {
+        "semantic_similarity": {
+            "mean": 0.6481,
+            "std": 0.1535
+        },
+        "lexical_overlap": {
+            "mean": 0.1068,
+            "std": 0.0662
+        },
+        "word_count": {
+            "mean": 17.4462,
+            "std": 3.1045
+        },
+        "unique_word_ratio": {
+            "mean": 0.9405,
+            "std": 0.0673
+        },
+        "avg_word_length": {
+            "mean": 6.3173,
+            "std": 0.9969
+        }
+    }
+}
