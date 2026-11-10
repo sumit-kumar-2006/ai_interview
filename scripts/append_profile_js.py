@@ -727,3 +727,4 @@ with open("frontend/script.js", "a", encoding="utf-8") as f:
     f.write(js_code)
 
 print("Appended Profile JS logic to script.js successfully!")
+

@@ -29,6 +29,7 @@ class UserResponse(BaseModel):
     id: int
     email: str
     full_name: Optional[str] = None
+    is_admin: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -200,3 +201,56 @@ class QuestionInternal(QuestionPublic):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# ==============================
+# ADMIN SCHEMAS
+# ==============================
+
+class AdminStatsResponse(BaseModel):
+    total_users: int
+    total_interviews: int
+    avg_system_score: float
+    total_practice_hours: float
+    active_questions_count: int
+
+class AdminUserItem(BaseModel):
+    id: int
+    email: str
+    full_name: Optional[str] = None
+    is_admin: bool
+    created_at: datetime
+    interview_count: int
+    avg_score: float
+    target_role: Optional[str] = None
+
+class AdminUsersListResponse(BaseModel):
+    users: List[AdminUserItem]
+    total_count: int
+    page: int
+    page_size: int
+
+class AdminInterviewItem(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
+    target_role: Optional[str] = None
+    experience_level: Optional[str] = None
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+    duration_seconds: Optional[float] = None
+    overall_score: Optional[float] = None
+    technical_score: Optional[float] = None
+    communication_score: Optional[float] = None
+    questions_answered: int
+    questions_skipped: int
+
+class AdminInterviewsListResponse(BaseModel):
+    interviews: List[AdminInterviewItem]
+    total_count: int
+    page: int
+    page_size: int
+
+class AdminRoleUpdateRequest(BaseModel):
+    is_admin: bool
+

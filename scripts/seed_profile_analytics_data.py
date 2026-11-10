@@ -324,3 +324,4 @@ try:
 
 finally:
     db.close()
+

@@ -1,3 +1,19 @@
-sqlalchemy
-pymysql
-python-dotenv
+# AI Interview Analyzer - Backend Service Dependencies
+fastapi==0.141.1
+uvicorn==0.52.4
+starlette==1.6.0
+sqlalchemy==2.0.52
+pymysql==1.2.0
+python-dotenv==1.2.3
+pydantic==2.13.4
+python-multipart==0.0.32
+passlib==1.7.4
+bcrypt==5.0.0
+PyJWT==2.13.0
+weasyprint==70.0
+pypdf==6.19.0
+python-docx==1.2.0
+httpx==0.28.1
+numpy==2.4.6
+scikit-learn==1.9.0
+pytest==9.1.1

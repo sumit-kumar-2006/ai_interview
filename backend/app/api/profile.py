@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 import os
 
 from backend.app.database import get_db
@@ -212,84 +212,134 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
     best_score = round(max(scores), 1) if scores else 0.0
     latest_score = round(scores[0], 1) if scores else 0.0
 
-    # Overall gauge score (85.0% benchmark or computed blend)
-    overall_score = 85.0 if total_count >= 8 else round(latest_score * 0.5 + avg_score * 0.5, 1)
+    # Overall score derived from genuine completed interviews (matching Dashboard & Reports)
+    overall_score = avg_score if total_count > 0 else 0.0
 
-    # Detailed metrics
-    all_qr = []
+    # Extract metrics from actual QuestionResults across user's sessions
+    comm_scores = []
+    rel_scores = []
+    tech_scores = []
     for inv in interviews:
-        all_qr.extend(inv.question_results)
+        if inv.technical_score is not None:
+            tech_scores.append(float(inv.technical_score))
+        if inv.communication_score is not None:
+            comm_scores.append(float(inv.communication_score))
+        for qr in (getattr(inv, "question_results", None) or []):
+            if qr.communication_score is not None:
+                comm_scores.append(float(qr.communication_score))
+            if qr.relevance_score is not None:
+                rel_scores.append(float(qr.relevance_score))
+            if qr.concept_coverage is not None:
+                rel_scores.append(float(qr.concept_coverage))
+            if qr.final_score is not None:
+                tech_scores.append(float(qr.final_score))
 
-    # Calculate or default metrics based on actual DB scores
-    answer_quality = 92.3
-    communication = 87.1
-    visual_presence = 84.5
-    question_perf = 79.8
-    confidence = 88.7
+    if total_count > 0:
+        answer_quality = round(sum(rel_scores) / len(rel_scores), 1) if rel_scores else avg_score
+        communication = round(sum(comm_scores) / len(comm_scores), 1) if comm_scores else avg_score
+        question_perf = round(sum(tech_scores) / len(tech_scores), 1) if tech_scores else avg_score
+        confidence = round(max(0.0, min(100.0, (communication * 0.55 + answer_quality * 0.45))), 1)
+        visual_presence = round(max(0.0, min(100.0, communication * 0.92)), 1)
+    else:
+        answer_quality = 0.0
+        communication = 0.0
+        question_perf = 0.0
+        confidence = 0.0
+        visual_presence = 0.0
 
-    if all_qr:
-        valid_scores = [q.final_score for q in all_qr if q.final_score is not None]
-        if valid_scores:
-            answer_quality = round(max(valid_scores), 1)
-        comm_scores = [q.communication_score for q in all_qr if q.communication_score is not None]
-        if comm_scores:
-            communication = round(sum(comm_scores) / len(comm_scores), 1)
-        # Visual presence from visual_analysis
-        vis_scores = []
-        for q in all_qr:
-            if isinstance(q.visual_analysis, dict):
-                ec = q.visual_analysis.get("eye_contact_percentage")
-                if ec:
-                    vis_scores.append(float(ec))
-        if vis_scores:
-            visual_presence = round(sum(vis_scores) / len(vis_scores), 1)
-
-    # Trend series for line chart (chronological ascending)
-    sorted_inv = sorted(interviews, key=lambda x: x.completed_at or x.created_at)
-    trend_labels = []
-    trend_scores = []
-    trend_avg_benchmarks = []
-    benchmark_levels = [60.0, 68.0, 70.0, 72.0, 75.0]
-
-    for idx, inv in enumerate(sorted_inv[-5:]):
-        dt = inv.completed_at or inv.created_at
-        trend_labels.append(dt.strftime("%b %d") if dt else f"Session {idx+1}")
-        trend_scores.append(round(float(inv.overall_score or 0.0), 1))
-        bm_idx = min(idx, len(benchmark_levels) - 1)
-        trend_avg_benchmarks.append(benchmark_levels[bm_idx])
-
-    if not trend_labels:
-        trend_labels = ["Oct 10", "Oct 17", "Oct 24", "Oct 31", "Nov 5"]
-        trend_scores = [70.0, 78.0, 85.0, 85.1, 92.5]
-        trend_avg_benchmarks = [60.0, 68.0, 70.0, 72.0, 75.0]
+    # Chronological Trend Chart from real interview records
+    chronological = sorted(
+        [i for i in interviews if i.overall_score is not None],
+        key=lambda x: x.completed_at or x.created_at or datetime.min
+    )
+    if chronological:
+        sample = chronological[-7:] if len(chronological) > 7 else chronological
+        trend_labels = [(i.completed_at or i.created_at).strftime("%b %d") for i in sample]
+        trend_scores = [round(float(i.overall_score), 1) for i in sample]
+        trend_avg_benchmarks = [75.0] * len(trend_scores)
+    else:
+        trend_labels = []
+        trend_scores = []
+        trend_avg_benchmarks = []
 
     joined_dt = current_user.created_at
-    joined_str = joined_dt.strftime("%b %Y") if joined_dt else "Nov 2025"
+    joined_str = joined_dt.strftime("%b %Y") if joined_dt else "Recent"
 
     recent_sessions = []
     for inv in interviews[:10]:
         dt = inv.completed_at or inv.created_at
+        if dt:
+            d_str = dt.strftime("%b ") + str(dt.day) + dt.strftime(", %Y • %I:%M %p").replace(" 0", " ")
+        else:
+            d_str = "Recent Session"
         recent_sessions.append({
             "id": inv.id,
             "target_role": inv.target_role or "Interview Session",
             "completed_at": dt.isoformat() if dt else None,
-            "completed_at_str": dt.strftime("%b %d, %Y • %I:%M %p") if dt else "Recent Session",
+            "completed_at_str": d_str,
             "overall_score": round(float(inv.overall_score or 0.0), 1),
             "duration_seconds": inv.duration_seconds or 0,
             "questions_answered": inv.questions_answered or 1
         })
 
+    # Actionable insights tailored to actual performance
+    if total_count == 0:
+        insights = [
+            "Complete your first technical mock interview to unlock AI-powered speech, visual, and answer analysis.",
+            "Upload your updated resume to receive personalized questions matching your actual projects and skills.",
+            "Prepare your webcam and microphone in Device Check for optimal simulation."
+        ]
+        recommendations = [
+            "Start with an Easy or Medium interview in your target role to establish a baseline score.",
+            "Speak clearly into your microphone and articulate your architectural thought process.",
+            "Review key data structures, algorithms, and system design patterns for your domain."
+        ]
+    elif avg_score >= 80:
+        insights = [
+            "Excellent overall technical fluency and conceptual clarity across your completed sessions.",
+            "Your answers demonstrate strong grasp of core engineering principles and architectural trade-offs.",
+            "Consistent pacing and minimal fillers reflect high interview confidence."
+        ]
+        recommendations = [
+            "Practice advanced System Design and distributed scalability scenarios.",
+            "Provide quantitative metrics from your production projects (e.g., latency reduction, throughput).",
+            "Keep answers concise and prioritize the most impactful technical decisions first."
+        ]
+    elif avg_score >= 60:
+        insights = [
+            "Solid technical understanding with good engagement on foundational concepts.",
+            "Some technical answers could benefit from greater depth and concrete implementation examples.",
+            "Communication delivery is steady; continuing practice will reduce pause intervals."
+        ]
+        recommendations = [
+            "Explicitly define required architectural terms and concepts before deep diving into details.",
+            "Incorporate the STAR framework (Situation, Task, Action, Result) for scenario-based responses.",
+            "Review domain-specific concepts flagged in your individual interview feedback reports."
+        ]
+    else:
+        insights = [
+            "Active practice engagement recorded. Technical accuracy requires additional reinforcement.",
+            "Ensure answers directly target the question's core concepts rather than tangential topics.",
+            "Focus on speaking at a steady, measured pace without rushing."
+        ]
+        recommendations = [
+            "Review the reference concepts and rubric breakdowns provided in your detailed reports.",
+            "Practice vocalizing your explanations out loud to improve fluency and conceptual recall.",
+            "Retake sessions in specific topics until achieving 75%+ score consistency."
+        ]
+
     return {
         "user": {
             "id": current_user.id,
             "email": current_user.email,
-            "full_name": current_user.full_name or (profile.name if profile else "Candidate")
+            "full_name": current_user.full_name or (profile.name if profile else "Candidate"),
+            "is_admin": bool(getattr(current_user, "is_admin", False))
         },
         "profile": {
-            "name": (profile.name if profile else None) or current_user.full_name or "Sumit Gounder",
-            "education": (profile.education if profile else None) or "BCA Student",
-            "college": (profile.college if profile else None) or "Navgujarat BCA",
-            "target_role": (profile.target_role if profile else None) or "Frontend Developer",
+            "name": (profile.name if profile else None) or current_user.full_name or "Candidate",
+            "education": (profile.education if profile else None) or "Technical Degree",
+            "college": (profile.college if profile else None) or "",
+            "target_role": (profile.target_role if profile else None) or "Software Engineer",
             "experience_type": (profile.experience_type if profile else None) or "Fresher",
             "is_verified": True
         },
@@ -303,10 +353,10 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
             "best_score": best_score,
             "latest_score": latest_score,
             "trends": {
-                "overall": "+5.2%",
-                "interviews": "+1 this month",
-                "time": "+32 min",
-                "avg": "+6.1%"
+                "overall": f"+{round(latest_score - avg_score, 1)}%" if (latest_score and avg_score and latest_score >= avg_score) else f"{round(latest_score - avg_score, 1)}%",
+                "interviews": f"{total_count} total",
+                "time": duration_str,
+                "avg": f"{avg_score}%"
             }
         },
         "performance": {
@@ -317,26 +367,18 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
             "confidence": confidence
         },
         "skills": [
-            {"name": "Communication", "score": 92.0},
-            {"name": "Technical Knowledge", "score": 88.0},
-            {"name": "Problem Solving", "score": 85.0},
-            {"name": "Confidence", "score": 83.0}
+            {"name": "Communication", "score": communication},
+            {"name": "Technical Knowledge", "score": question_perf},
+            {"name": "Answer Quality", "score": answer_quality},
+            {"name": "Confidence", "score": confidence}
         ],
         "trend_chart": {
             "labels": trend_labels,
             "your_scores": trend_scores,
             "avg_scores": trend_avg_benchmarks
         },
-        "insights": [
-            "Great job! Your communication skills are strong and confident.",
-            "Try to improve your answer depth in technical questions.",
-            "Focus more on real-world project examples."
-        ],
-        "recommendations": [
-            "Practice more coding questions (especially DSA).",
-            "Improve your explanation with clear examples.",
-            "Work on confidence and reduce fillers (um, like, etc.)."
-        ],
+        "insights": insights,
+        "recommendations": recommendations,
         "interviews": recent_sessions,
         "filter_days": days
     }
@@ -354,17 +396,11 @@ def get_profile_analytics(
     """
     profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
 
-    query = db.query(Interview).filter(Interview.user_id == current_user.id)
+    query = db.query(Interview).options(joinedload(Interview.question_results)).filter(Interview.user_id == current_user.id)
     if days is not None and days > 0:
         cutoff = datetime.utcnow() - timedelta(days=days)
-        # Check if we have sessions within the cutoff
         filtered_interviews = query.filter(Interview.completed_at >= cutoff).order_by(Interview.completed_at.desc()).all()
-        # If user has records but none in recent cutoff window (e.g. test historical data from Oct/Nov),
-        # return all to preserve rich analytics while reflecting the active filter
-        if filtered_interviews:
-            interviews = filtered_interviews
-        else:
-            interviews = query.order_by(Interview.completed_at.desc()).all()
+        interviews = filtered_interviews
     else:
         interviews = query.order_by(Interview.completed_at.desc()).all()
 
@@ -383,8 +419,12 @@ def get_profile_analytics_pdf(
     with full KPI metrics, skill breakdown, recommendations, and session history.
     """
     profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
-    query = db.query(Interview).filter(Interview.user_id == current_user.id)
-    interviews = query.order_by(Interview.completed_at.desc()).all()
+    query = db.query(Interview).options(joinedload(Interview.question_results)).filter(Interview.user_id == current_user.id)
+    if days is not None and days > 0:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        interviews = query.filter(Interview.completed_at >= cutoff).order_by(Interview.completed_at.desc()).all()
+    else:
+        interviews = query.order_by(Interview.completed_at.desc()).all()
 
     analytics = _build_analytics_payload(current_user, profile, interviews, days)
     pdf_bytes = render_profile_analytics_pdf(analytics)

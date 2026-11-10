@@ -90,3 +90,14 @@ def get_current_user_optional(
         return db.query(User).filter(User.id == int(user_id)).first()
     return db.query(User).filter(User.email == str(user_id)).first()
 
+def get_current_admin_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator access required for this action."
+        )
+    return current_user
+
+

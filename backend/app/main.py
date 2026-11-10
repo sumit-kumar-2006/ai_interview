@@ -22,7 +22,7 @@ from backend.app.speech_analyzer import SpeechAnalyzer
 from computer_vision.visual_analyzer import process_visual_observations, VisualAnalysisRequest, VisualAnalysisResponse
 from backend.app.database import create_database_if_not_exists, ensure_schema_updates, engine, Base, get_db
 import backend.app.models  # Ensures all models (User, Interview, QuestionResult, UserProfile) are loaded into Base metadata
-from backend.app.api import interviews, auth, profile
+from backend.app.api import interviews, auth, profile, admin
 from backend.app.auth import get_current_user_optional
 from backend.app.audio_validator import validate_audio_recording, SafeTemporaryAudioFile
 
@@ -65,9 +65,16 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(interviews.router)
+app.include_router(admin.router)
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1677FF"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'
+    return Response(content=svg, media_type="image/svg+xml")
+
 
 if os.path.exists("frontend"):
     app.mount("/frontend", StaticFiles(directory="frontend", html=True), name="frontend")

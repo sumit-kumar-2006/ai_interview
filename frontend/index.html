@@ -18,6 +18,7 @@
 
   <!-- Main Stylesheet -->
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231677FF'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
 
   <!-- MediaPipe Face Mesh CDN for Browser Landmark CV -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -53,6 +54,7 @@
         <button class="landing-nav-item nav-btn-link" id="nav-practice-btn">Start Interview</button>
         <button class="landing-nav-item nav-btn-link" id="nav-profile-btn">Profile</button>
         <button class="landing-nav-item nav-btn-link" id="nav-analytics-btn">Analytics</button>
+        <button class="landing-nav-item nav-btn-link hidden" id="nav-admin-btn">Admin Panel</button>
       </nav>
 
       <div class="nav-actions">
@@ -120,6 +122,10 @@
               <button class="npmd-link-btn" id="npmd-item-setup">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 <span>Start Interview</span>
+              </button>
+              <button class="npmd-link-btn hidden" id="npmd-item-admin">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Admin Panel</span>
               </button>
               <div class="npmd-divider"></div>
               <button class="npmd-link-btn text-danger" id="npmd-item-logout">
@@ -779,8 +785,8 @@
               </div>
               <div class="footer-nav-col">
                 <span class="footer-col-header">LEGAL</span>
-                <a href="#" class="footer-link">Privacy</a>
-                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link policy-privacy-link">Privacy</a>
+                <a href="#" class="footer-link policy-terms-link">Terms</a>
               </div>
             </div>
           </div>
@@ -2237,8 +2243,8 @@
               </div>
               <div class="footer-col">
                 <h4 class="footer-heading">LEGAL</h4>
-                <a href="#" class="footer-link">Privacy</a>
-                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link policy-privacy-link">Privacy</a>
+                <a href="#" class="footer-link policy-terms-link">Terms</a>
               </div>
             </div>
           </div>
@@ -2866,8 +2872,8 @@
               </div>
               <div class="footer-col">
                 <h4 class="footer-heading">LEGAL</h4>
-                <a href="#" class="footer-link">Privacy</a>
-                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link policy-privacy-link">Privacy</a>
+                <a href="#" class="footer-link policy-terms-link">Terms</a>
               </div>
             </div>
           </div>
@@ -3430,14 +3436,14 @@
                 <div class="footer-links">
                   <a href="#how-it-works">How It Works</a>
                   <a href="#features">Features</a>
-                  <a href="#login" id="setup-footer-login-link">Login</a>
+                  <a href="#" id="setup-footer-login-link">Login</a>
                 </div>
               </div>
               <div class="footer-nav-group">
                 <span class="footer-nav-title">LEGAL</span>
                 <div class="footer-links">
-                  <a href="#privacy">Privacy</a>
-                  <a href="#terms">Terms</a>
+                  <a href="#" class="policy-privacy-link">Privacy</a>
+                  <a href="#" class="policy-terms-link">Terms</a>
                 </div>
               </div>
             </div>
@@ -3788,6 +3794,188 @@
       </div>
     </div>
 
+    <!-- VIEW 4: ADMINISTRATOR CONTROL PANEL -->
+    <div class="view-panel" id="view-admin">
+      <div class="admin-wrapper">
+        <!-- Hero Header -->
+        <div class="admin-header-card">
+          <div class="admin-header-info">
+            <div class="admin-badge-row">
+              <span class="badge badge-primary-subtle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                System Administration
+              </span>
+              <span class="badge badge-success-subtle">● Live MySQL Connection</span>
+            </div>
+            <h1 class="admin-title">Platform Control Center</h1>
+            <p class="admin-subtitle">Monitor candidates, audit evaluation metrics, inspect session recordings, and manage role-based security.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-admin-refresh">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Refresh Metrics</span>
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-admin-back-dash">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              <span>Back to Dashboard</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 KPI Metrics Cards -->
+        <div class="admin-kpi-grid">
+          <div class="admin-kpi-card card">
+            <div class="kpi-icon-wrap kpi-blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">Registered Candidates</span>
+              <div class="kpi-num" id="admin-stat-users">--</div>
+              <span class="kpi-hint">Total registered accounts</span>
+            </div>
+          </div>
+
+          <div class="admin-kpi-card card">
+            <div class="kpi-icon-wrap kpi-purple">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">Interviews Completed</span>
+              <div class="kpi-num" id="admin-stat-interviews">--</div>
+              <span class="kpi-hint">Recorded evaluation sessions</span>
+            </div>
+          </div>
+
+          <div class="admin-kpi-card card">
+            <div class="kpi-icon-wrap kpi-green">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">System Average Score</span>
+              <div class="kpi-num" id="admin-stat-avg-score">--%</div>
+              <span class="kpi-hint">Benchmarked technical performance</span>
+            </div>
+          </div>
+
+          <div class="admin-kpi-card card">
+            <div class="kpi-icon-wrap kpi-amber">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">Total Practice Hours</span>
+              <div class="kpi-num" id="admin-stat-hours">--</div>
+              <span class="kpi-hint">Live audio & evaluation runtime</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Management Tabs Section -->
+        <div class="admin-tabs-nav">
+          <button class="admin-tab-btn active" id="admin-tab-users-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Candidate Management</span>
+          </button>
+          <button class="admin-tab-btn" id="admin-tab-interviews-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>All Interview Records</span>
+          </button>
+        </div>
+
+        <!-- TAB 1: USERS SECTION -->
+        <div class="admin-tab-content active" id="admin-panel-users">
+          <div class="admin-card card">
+            <div class="admin-filter-bar">
+              <div class="admin-search-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="admin-users-search-input" placeholder="Search by candidate name or email..." class="admin-input" />
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-admin-search-users">Search</button>
+              <button class="btn btn-secondary btn-sm" id="btn-admin-clear-users">Clear</button>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table" id="admin-users-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Candidate</th>
+                    <th>Target Role</th>
+                    <th>Interviews</th>
+                    <th>Avg Score</th>
+                    <th>Role</th>
+                    <th>Registered</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-tbody">
+                  <tr><td colspan="8" class="text-center py-4">Loading candidates...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-pagination-bar">
+              <span class="pagination-info" id="admin-users-page-info">Showing 1 to 10</span>
+              <div class="pagination-actions">
+                <button class="btn btn-secondary btn-sm" id="btn-admin-users-prev" disabled>← Previous</button>
+                <button class="btn btn-secondary btn-sm" id="btn-admin-users-next">Next →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: INTERVIEWS SECTION -->
+        <div class="admin-tab-content hidden" id="admin-panel-interviews">
+          <div class="admin-card card">
+            <div class="admin-filter-bar">
+              <div class="admin-search-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="admin-inv-search-input" placeholder="Search by candidate or target role..." class="admin-input" />
+              </div>
+              <select id="admin-inv-role-filter" class="admin-select">
+                <option value="All">All Roles</option>
+                <option value="Software Engineer">Software Engineer</option>
+                <option value="Frontend Developer">Frontend Developer</option>
+                <option value="Backend Developer">Backend Developer</option>
+                <option value="DevOps Engineer">DevOps Engineer</option>
+                <option value="Data Analyst">Data Analyst</option>
+                <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+              </select>
+              <button class="btn btn-primary btn-sm" id="btn-admin-search-inv">Filter</button>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table" id="admin-inv-table">
+                <thead>
+                  <tr>
+                    <th>Session ID</th>
+                    <th>Candidate</th>
+                    <th>Target Role</th>
+                    <th>Questions</th>
+                    <th>Duration</th>
+                    <th>Overall Score</th>
+                    <th>Completed Date</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-inv-tbody">
+                  <tr><td colspan="8" class="text-center py-4">Loading interview records...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-pagination-bar">
+              <span class="pagination-info" id="admin-inv-page-info">Showing 1 to 10</span>
+              <div class="pagination-actions">
+                <button class="btn btn-secondary btn-sm" id="btn-admin-inv-prev" disabled>← Previous</button>
+                <button class="btn btn-secondary btn-sm" id="btn-admin-inv-next">Next →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </main>
 
 
@@ -4013,6 +4201,72 @@
           <span>Continue to Dashboard →</span>
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- PRIVACY POLICY MODAL -->
+  <div class="modal-overlay hidden" id="privacy-modal">
+    <div class="auth-modal-card" style="max-width: 600px; max-height: 85vh; overflow-y: auto;">
+      <div class="auth-modal-header">
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #101B55;">Privacy Policy</h3>
+        <p style="font-size: 0.8125rem; color: #64748B; margin-top: 4px;">Last updated: November 2026</p>
+        <button class="modal-close-btn" id="privacy-modal-close" title="Close">&times;</button>
+      </div>
+      <div class="modal-body-text" style="font-size: 0.875rem; color: #334155; line-height: 1.6; padding: 12px 0;">
+        <h4 style="font-weight: 600; color: #101B55; margin-bottom: 6px;">1. Information We Collect</h4>
+        <p style="margin-bottom: 12px;">We collect candidate profile details, uploaded resumes, audio recordings, video landmark metrics, and interview answers strictly to analyze candidate performance and generate AI-driven feedback reports.</p>
+
+        <h4 style="font-weight: 600; color: #101B55; margin-bottom: 6px;">2. Camera & Audio Stream Processing</h4>
+        <p style="margin-bottom: 12px;">Video and audio feeds are processed locally in your browser and on your dedicated private backend. We do not sell or broadcast your video, facial geometry, or audio transcripts to third parties.</p>
+
+        <h4 style="font-weight: 600; color: #101B55; margin-bottom: 6px;">3. Data Security & Storage</h4>
+        <p style="margin-bottom: 12px;">All user passwords are encrypted using bcrypt salt hashing. Interview transcripts and evaluation rubrics are stored in encrypted relational database tables with strict user ownership boundaries.</p>
+
+        <h4 style="font-weight: 600; color: #101B55; margin-bottom: 6px;">4. Candidate Rights</h4>
+        <p>Candidates maintain full rights to delete their individual interview recordings, parsed resume summaries, and account profiles at any time through the platform interface.</p>
+      </div>
+      <div style="margin-top: 16px; text-align: right;">
+        <button class="btn btn-primary btn-sm" id="btn-privacy-agree">Understood</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TERMS OF SERVICE MODAL -->
+  <div class="modal-overlay hidden" id="terms-modal">
+    <div class="auth-modal-card" style="max-width: 600px; max-height: 85vh; overflow-y: auto;">
+      <div class="auth-modal-header">
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #101B55;">Terms of Service</h3>
+        <p style="font-size: 0.8125rem; color: #64748B; margin-top: 4px;">Effective date: November 2026</p>
+        <button class="modal-close-btn" id="terms-modal-close" title="Close">&times;</button>
+      </div>
+      <div class="modal-body-text" style="font-size: 0.875rem; color: #334155; line-height: 1.6; padding: 12px 0;">
+        <h4 style="font-weight: 600; color: #101B55; margin-bottom: 6px;">1. Platform Usage</h4>
+        <p style="margin-bottom: 12px;">The AI Interview Analyzer is an educational and technical readiness preparation tool. Scores and evaluations represent objective algorithmic feedback and benchmark metrics.</p>
+
+        <h4 style="font-weight: 600; color: #101B55; margin-bottom: 6px;">2. User Responsibilities</h4>
+        <p style="margin-bottom: 12px;">Users agree to provide accurate technical resume details and engage in authentic practice answers without attempting unauthorized system probing or denial of service.</p>
+
+        <h4 style="font-weight: 600; color: #101B55; margin-bottom: 6px;">3. Service Reliability</h4>
+        <p>The platform strives for continuous availability. Hardware permissions (camera, microphone) are granted at user discretion and can be revoked at any time via browser settings.</p>
+      </div>
+      <div style="margin-top: 16px; text-align: right;">
+        <button class="btn btn-primary btn-sm" id="btn-terms-agree">Agree & Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN DELETE CONFIRMATION MODAL -->
+  <div class="modal-overlay hidden" id="admin-delete-modal">
+    <div class="auth-modal-card" style="max-width: 440px;">
+      <div class="auth-modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #DC2626;">Confirm Deletion</h3>
+        <button class="modal-close-btn" id="admin-delete-modal-close">&times;</button>
+      </div>
+      <p id="admin-delete-msg" style="font-size: 0.875rem; color: #475569; margin: 12px 0 20px 0; line-height: 1.5;">Are you sure you want to delete this record? This action cannot be undone.</p>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-secondary btn-sm" id="btn-admin-cancel-delete">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="btn-admin-confirm-delete" style="background: #DC2626; color: white;">Delete Permanently</button>
+      </div>
     </div>
   </div>
 

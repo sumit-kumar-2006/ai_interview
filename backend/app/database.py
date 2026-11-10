@@ -88,6 +88,16 @@ def ensure_schema_updates():
                 )
                 print("'user_id' column added successfully.")
 
+            # Check is_admin column on users
+            cursor.execute(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'users' AND COLUMN_NAME = 'is_admin'",
+                (DB_NAME,)
+            )
+            if cursor.fetchone()[0] == 0:
+                print("Adding missing 'is_admin' column to 'users' table...")
+                cursor.execute("ALTER TABLE users ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0;")
+                print("'is_admin' column added successfully.")
+
             # Check resume columns on user_profiles
             for col_name, col_type in [("resume_filename", "VARCHAR(255) NULL"), ("parsed_resume", "JSON NULL")]:
                 cursor.execute(
