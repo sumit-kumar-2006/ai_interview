@@ -48,3 +48,4 @@ opencv-python==5.0.0.93
 # Testing & Quality Assurance
 pytest==9.1.1
 websocket-client==1.9.0
+

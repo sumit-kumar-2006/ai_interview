@@ -65,3 +65,4 @@ for name, url, w, h in SHOTS:
         time.sleep(0.5)
 
 print("Admin screenshots completed!")
+

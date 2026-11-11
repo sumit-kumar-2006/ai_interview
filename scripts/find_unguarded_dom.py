@@ -42,3 +42,4 @@ for i, line in enumerate(lines):
                     has_check = any('if (' + var_name in prev or 'if (' + var_name + ' ' in prev for prev in lines[i:j])
                     if not has_check:
                         print(f"Potential unguarded variable usage: Line {j}: {var_name} (from id '{el_id}') -> {nl.strip()}")
+

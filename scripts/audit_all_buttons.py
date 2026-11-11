@@ -42,3 +42,4 @@ for idx, btn in enumerate(buttons, 1):
         
     print(f"[{idx:02d}] ID: '{bid:<28}' Text: '{btext[:25]:<25}' Cls: '{bcls[:30]:<30}' Handler: {status}")
 
+

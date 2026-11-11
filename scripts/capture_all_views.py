@@ -97,3 +97,4 @@ for vp_name, width, height in VIEWPORTS:
             time.sleep(0.5)
 
 print("\n=== FINISHED CDP VIEWPORT CAPTURES ===")
+

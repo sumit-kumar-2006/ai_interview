@@ -17,3 +17,4 @@ for root, _, files in os.walk('backend'):
 print(f"Total potential raw f-string SQL queries found: {len(vulns)}")
 for p, idx, l in vulns:
     print(f"  {p}:{idx} -> {l}")
+

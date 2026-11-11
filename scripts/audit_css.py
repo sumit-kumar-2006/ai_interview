@@ -32,3 +32,4 @@ print(f"\nCSS Custom Properties defined in :root ({len(root_vars)}):")
 for v, val in root_vars[:15]:
     print(f"  {v}: {val.strip()}")
 
+

@@ -24,3 +24,4 @@ for idx, a in enumerate(links, 1):
         status = "EMPTY_OR_HASH_ONLY"
         
     print(f"[{idx:02d}] href='{href:<25}' id='{aid:<20}' text='{text:<30}' status={status}")
+

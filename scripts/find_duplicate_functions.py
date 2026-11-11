@@ -20,3 +20,4 @@ for fn, cnt in duplicates.items():
     for idx, l in enumerate(lines, 1):
         if re.search(r'(?:async\s+)?function\s+' + fn + r'\b', l):
             print(f"    Line {idx}: {l.strip()}")
+

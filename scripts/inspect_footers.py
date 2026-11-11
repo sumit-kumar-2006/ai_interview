@@ -12,3 +12,4 @@ for idx, foot in enumerate(footers, 1):
     links = foot.find_all(['a', 'button'])
     for l in links:
         print(f"   <{l.name}> id='{l.get('id')}' href='{l.get('href')}' text='{l.get_text(strip=True)}'")
+

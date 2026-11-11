@@ -79,3 +79,4 @@ for v in views_in_html:
     count = js_content.count(v)
     print(f"  View '{v}': referenced {count} times in JS")
 
+

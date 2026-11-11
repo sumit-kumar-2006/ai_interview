@@ -698,7 +698,7 @@ async def transcribe_audio(
 async def transcribe_and_score(
     audio: UploadFile = File(...),
     question: str = Form(...),
-    reference_answer: str = Form(...)
+    reference_answer: Optional[str] = Form("")
 ):
 
     temp_path = None

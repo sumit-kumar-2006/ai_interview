@@ -3,6 +3,33 @@ import sys
 import wave
 import requests
 
+def get_api_client():
+    base_url = "http://127.0.0.1:8000"
+    try:
+        r = requests.get(f"{base_url}/health", timeout=0.5)
+        if r.status_code == 200:
+            return requests, base_url
+    except Exception:
+        pass
+    
+    # In-memory TestClient fallback for isolated test runners
+    from fastapi.testclient import TestClient
+    from backend.app.main import app
+    test_client = TestClient(app)
+    
+    class InProcessAdapter:
+        @staticmethod
+        def post(url, **kwargs):
+            path = url.replace(base_url, "")
+            return test_client.post(path, **kwargs)
+        
+        @staticmethod
+        def get(url, **kwargs):
+            path = url.replace(base_url, "")
+            return test_client.get(path, **kwargs)
+            
+    return InProcessAdapter(), base_url
+
 def create_silent_wav(filename="tests/test_silent.wav", duration_sec=2.0, sample_rate=16000):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     num_samples = int(duration_sec * sample_rate)
@@ -14,7 +41,7 @@ def create_silent_wav(filename="tests/test_silent.wav", duration_sec=2.0, sample
     return filename
 
 def test_live_backend():
-    base_url = "http://127.0.0.1:8000"
+    client, base_url = get_api_client()
 
     print("\n=========================================")
     print("TESTING LIVE BACKEND NO-SPEECH DETECTION")
@@ -24,7 +51,7 @@ def test_live_backend():
     print("\n[TEST A] Testing completely silent WAV file...")
     silent_file = create_silent_wav()
     with open(silent_file, "rb") as f:
-        res = requests.post(
+        res = client.post(
             f"{base_url}/transcribe-and-score",
             files={"audio": ("test_silent.wav", f, "audio/wav")},
             data={
@@ -53,7 +80,7 @@ def test_live_backend():
     # 3. TEST C: Valid polymorphism answer
     print("\n[TEST C] Testing valid polymorphism answer (speech/test.wav)...")
     with open("speech/test.wav", "rb") as f:
-        res = requests.post(
+        res = client.post(
             f"{base_url}/transcribe-and-score",
             files={"audio": ("test.wav", f, "audio/wav")},
             data={
@@ -72,7 +99,7 @@ def test_live_backend():
 
     # 4. TEST D: Scoring endpoint (/predict-score or canonical /evaluate-answer)
     print("\n[TEST D] Testing scoring endpoint...")
-    res = requests.post(
+    res = client.post(
         f"{base_url}/predict-score",
         json={
             "question": "What is polymorphism in object oriented programming?",
@@ -90,11 +117,11 @@ def test_live_backend():
     else:
         # In production mode, /predict-score is disabled with 403; test canonical /evaluate-answer
         assert res.status_code == 403
-        q_res = requests.get(f"{base_url}/interview/questions?limit=1")
+        q_res = client.get(f"{base_url}/interview/questions?limit=1")
         assert q_res.status_code == 200
         q_data = q_res.json()["questions"][0]
         qid = q_data["id"]
-        eval_res = requests.post(
+        eval_res = client.post(
             f"{base_url}/evaluate-answer",
             json={
                 "question_id": qid,

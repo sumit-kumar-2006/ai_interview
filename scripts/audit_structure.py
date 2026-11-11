@@ -34,3 +34,4 @@ print(f'Total buttons: {len(soup.find_all("button"))}')
 print(f'Total inputs: {len(soup.find_all("input"))}')
 print(f'Total selects: {len(soup.find_all("select"))}')
 print(f'Total links: {len(soup.find_all("a"))}')
+

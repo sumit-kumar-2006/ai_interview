@@ -225,6 +225,7 @@ def get_interview_report(
 
 
 @router.get("/{interview_id}/pdf")
+@router.get("/{interview_id}/report/pdf")
 def get_interview_pdf(
     interview_id: int,
     current_user: User = Depends(get_current_user),
