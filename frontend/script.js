@@ -6165,12 +6165,29 @@ function initInterviewSetupPage() {
   const backDashBtn = document.getElementById('btn-setup-back-dash');
   if (backDashBtn) backDashBtn.onclick = () => navigateToView('dashboard');
 
-  // Continue to Device Check
+  // Continue to Device Check (In-Card & Persistent Sticky Action Bar)
   const continueDeviceBtn = document.getElementById('btn-continue-device-check');
-  if (continueDeviceBtn) continueDeviceBtn.onclick = () => {
-    saveInterviewConfigLocally();
-    navigateToView('device-check');
-  };
+  if (continueDeviceBtn) continueDeviceBtn.onclick = () => handleProceedToDeviceCheck();
+
+  const stickyContinueBtn = document.getElementById('btn-sticky-continue-device-check');
+  if (stickyContinueBtn) stickyContinueBtn.onclick = () => handleProceedToDeviceCheck();
+
+  // Mobile Summary Accordion Toggle
+  const sscMobileToggleBtn = document.getElementById('ssc-mobile-toggle-btn');
+  const summaryCard = document.getElementById('summary-sticky-card');
+  if (sscMobileToggleBtn && summaryCard && !sscMobileToggleBtn._boundToggle) {
+    sscMobileToggleBtn._boundToggle = true;
+    if (window.innerWidth <= 900) {
+      summaryCard.classList.add('collapsed');
+      sscMobileToggleBtn.setAttribute('aria-expanded', 'false');
+    }
+    sscMobileToggleBtn.onclick = () => {
+      if (window.innerWidth <= 900) {
+        const isCollapsed = summaryCard.classList.toggle('collapsed');
+        sscMobileToggleBtn.setAttribute('aria-expanded', !isCollapsed);
+      }
+    };
+  }
 
   // Device Check Back Setup
   const deviceBackBtn = document.getElementById('btn-device-back-setup');
@@ -6450,6 +6467,41 @@ function bindSetupGrid(containerId, configKey, isNumeric = false) {
   });
 }
 
+function validateInterviewSetup() {
+  if (!currentInterviewConfig.target_role) {
+    showToast('Please select your target job role.', 'warning');
+    return false;
+  }
+  if (!currentInterviewConfig.experience_level) {
+    showToast('Please select your experience level.', 'warning');
+    return false;
+  }
+  if (!currentInterviewConfig.interview_type) {
+    showToast('Please select an interview type.', 'warning');
+    return false;
+  }
+  if (!currentInterviewConfig.difficulty) {
+    showToast('Please select a difficulty level.', 'warning');
+    return false;
+  }
+  if (!currentInterviewConfig.question_count) {
+    showToast('Please select the number of questions.', 'warning');
+    return false;
+  }
+  if (!currentInterviewConfig.mode) {
+    showToast('Please select an interview mode.', 'warning');
+    return false;
+  }
+  return true;
+}
+
+function handleProceedToDeviceCheck() {
+  if (!validateInterviewSetup()) return;
+  saveInterviewConfigLocally();
+  navigateToView('device-check');
+  showToast('Configuration ready. Proceeding to Device Check.', 'info');
+}
+
 function updateSetupSummary() {
   if (document.getElementById('sum-role')) document.getElementById('sum-role').textContent = currentInterviewConfig.target_role;
   if (document.getElementById('sum-exp')) document.getElementById('sum-exp').textContent = currentInterviewConfig.experience_level;
@@ -6461,6 +6513,54 @@ function updateSetupSummary() {
   if (sumResumeEl) {
     const resName = currentUploadedResume?.filename || userProfile?.resume_filename || 'Jake_s_Resume__Anonymous__1__2_.pdf';
     sumResumeEl.textContent = resName.length > 18 ? resName.slice(0, 16) + '...' : resName;
+  }
+
+  // Update Persistent Bottom Action Bar Chips
+  const ssbRole = document.getElementById('ssb-chip-role');
+  const ssbExp = document.getElementById('ssb-chip-exp');
+  const ssbType = document.getElementById('ssb-chip-type');
+  const ssbDiff = document.getElementById('ssb-chip-diff');
+  const ssbCount = document.getElementById('ssb-chip-count');
+  const ssbText = document.getElementById('ssb-status-text');
+  const ssbBadge = document.querySelector('.ssb-indicator-badge');
+
+  if (ssbRole) ssbRole.textContent = currentInterviewConfig.target_role || 'Role';
+  if (ssbExp) ssbExp.textContent = currentInterviewConfig.experience_level || 'Level';
+  if (ssbType) ssbType.textContent = (currentInterviewConfig.interview_type || 'Mixed').replace(' Interview', '');
+  if (ssbDiff) ssbDiff.textContent = currentInterviewConfig.difficulty || 'Medium';
+  if (ssbCount) ssbCount.textContent = `${currentInterviewConfig.question_count || 5} Questions`;
+
+  // Update mobile summary teaser
+  const smtRole = document.getElementById('smt-role');
+  const smtExp = document.getElementById('smt-exp');
+  const smtType = document.getElementById('smt-type');
+  const smtCount = document.getElementById('smt-count');
+  if (smtRole) smtRole.textContent = currentInterviewConfig.target_role || 'Role';
+  if (smtExp) smtExp.textContent = currentInterviewConfig.experience_level || 'Mid';
+  if (smtType) smtType.textContent = (currentInterviewConfig.interview_type || 'Mixed').replace(' Interview', '');
+  if (smtCount) smtCount.textContent = `${currentInterviewConfig.question_count || 5} Qs`;
+
+  // Live Validation State
+  const isValid = !!(currentInterviewConfig.target_role &&
+                     currentInterviewConfig.experience_level &&
+                     currentInterviewConfig.interview_type &&
+                     currentInterviewConfig.difficulty &&
+                     currentInterviewConfig.question_count &&
+                     currentInterviewConfig.mode);
+
+  const stickyBtn = document.getElementById('btn-sticky-continue-device-check');
+  const cardBtn = document.getElementById('btn-continue-device-check');
+
+  if (isValid) {
+    if (ssbText) ssbText.textContent = 'Configuration Ready';
+    if (ssbBadge) ssbBadge.classList.remove('invalid');
+    if (stickyBtn) stickyBtn.disabled = false;
+    if (cardBtn) cardBtn.disabled = false;
+  } else {
+    if (ssbText) ssbText.textContent = 'Select required options';
+    if (ssbBadge) ssbBadge.classList.add('invalid');
+    if (stickyBtn) stickyBtn.disabled = true;
+    if (cardBtn) cardBtn.disabled = true;
   }
 }
 

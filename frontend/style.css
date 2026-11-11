@@ -12851,3 +12851,601 @@ body {
     flex-direction: column;
   }
 }
+
+
+/* ==========================================================================
+   SMART SCROLL & ZERO-FRICTION INTERVIEW SETUP REDESIGN (2026 UX ENHANCEMENT)
+   ========================================================================== */
+
+/* 1. Setup Wrapper & Container Flow */
+#view-interview-setup .setup-wrapper {
+  padding-bottom: 120px !important; /* Generous clearance for persistent bottom action bar */
+}
+
+/* 2. Compact Hero Split Header */
+#view-interview-setup .setup-hero-split {
+  padding: 12px 0 20px 0 !important;
+  gap: 20px !important;
+}
+
+#view-interview-setup .setup-hero-title {
+  font-size: 2.25rem !important;
+  margin-bottom: 4px !important;
+}
+
+#view-interview-setup .setup-hero-subtitle {
+  font-size: 0.95rem !important;
+}
+
+#view-interview-setup .setup-hero-laptop-img {
+  width: 210px !important;
+}
+
+#view-interview-setup .setup-speech-bubble {
+  top: -10px !important;
+  right: -6px !important;
+  padding: 5px 12px !important;
+  font-size: 0.75rem !important;
+}
+
+#view-interview-setup .setup-floating-mic {
+  width: 32px !important;
+  height: 32px !important;
+  top: 24px !important;
+  left: -10px !important;
+}
+
+/* 3. Main Grid & Sub-Grids */
+#view-interview-setup .setup-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 22px;
+  align-items: start;
+}
+
+#view-interview-setup .setup-config-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 2-Column Pairing Subgrids */
+.setup-config-subgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.setup-config-subgrid > .setup-card {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 4. Compact Setup Cards */
+.setup-card.compact {
+  padding: 20px !important;
+  border-radius: 16px !important;
+}
+
+.setup-card.compact .setup-card-header {
+  margin-bottom: 12px !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.setup-card.compact .setup-card-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+}
+
+.setup-card.compact .setup-card-title {
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  color: #101B55;
+}
+
+.setup-card.compact .setup-card-hint {
+  font-size: 0.8rem !important;
+  color: #53658F;
+  margin: 2px 0 0 0 !important;
+}
+
+/* Resume Card Compact Adjustments */
+#view-interview-setup .setup-resume-card {
+  padding: 20px !important;
+}
+
+#view-interview-setup .setup-resume-preview {
+  padding: 16px !important;
+}
+
+#view-interview-setup .setup-skills-chips-wrapper {
+  max-height: 86px;
+  overflow-y: auto;
+  gap: 6px !important;
+  padding: 4px 0 !important;
+}
+
+#view-interview-setup .skill-tag-chip {
+  font-size: 0.6875rem !important;
+  padding: 4px 9px !important;
+}
+
+#view-interview-setup .setup-featured-projects-row {
+  margin-top: 10px !important;
+  padding: 8px 12px !important;
+  font-size: 0.8125rem !important;
+}
+
+/* 5. Sub-grid Compact Option Grids */
+.setup-grid-4.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  margin-top: auto;
+}
+
+.setup-type-grid.compact-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px !important;
+  margin-top: auto;
+}
+
+.setup-type-grid.compact-grid .setup-type-card {
+  padding: 12px 14px !important;
+  min-height: auto !important;
+}
+
+.setup-type-grid.compact-grid .stc-desc {
+  font-size: 0.75rem !important;
+  line-height: 1.35 !important;
+  margin-top: 2px !important;
+}
+
+.setup-mode-grid.compact-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px !important;
+  margin-top: auto;
+}
+
+.setup-mode-grid.compact-grid .setup-mode-card {
+  padding: 14px 16px !important;
+}
+
+.option-pill-grid.trio.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
+  margin-top: auto;
+}
+
+.option-pill-grid.trio.compact-grid .setup-opt-card {
+  padding: 14px 10px !important;
+}
+
+.setup-opt-card .soc-title {
+  font-size: 0.95rem !important;
+}
+
+.setup-opt-card .soc-sub {
+  font-size: 0.75rem !important;
+}
+
+/* 6. Sticky Summary Column & Card */
+#view-interview-setup .setup-summary-col {
+  position: sticky;
+  top: 86px;
+  align-self: start;
+}
+
+#view-interview-setup .summary-sticky-card {
+  padding: 20px !important;
+  border-radius: 18px !important;
+}
+
+#view-interview-setup .ssc-body-rows {
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+}
+
+#view-interview-setup .ssc-row {
+  padding: 6px 0 !important;
+  font-size: 0.85rem !important;
+}
+
+#view-interview-setup .personalized-info-box {
+  padding: 10px 12px !important;
+  margin-bottom: 14px !important;
+  font-size: 0.78125rem !important;
+}
+
+#view-interview-setup .personalized-info-box p {
+  font-size: 0.71875rem !important;
+  line-height: 1.35 !important;
+}
+
+#view-interview-setup .btn-gradient-continue {
+  padding: 12px 18px !important;
+  font-size: 0.95rem !important;
+}
+
+/* Mobile Collapsible Header elements */
+.ssc-chevron {
+  display: none;
+  color: #53658F;
+  transition: transform 0.25s ease;
+}
+
+.ssc-mobile-teaser {
+  display: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1677FF;
+  padding: 6px 0 2px 0;
+}
+
+/* Compact Mic Stage */
+.setup-mic-stage.compact {
+  margin-top: 14px !important;
+  padding: 4px !important;
+}
+
+.setup-mic-stage.compact .setup-mic-img {
+  max-width: 140px !important;
+}
+
+.setup-mic-stage.compact .setup-mic-glow {
+  width: 130px !important;
+  height: 130px !important;
+}
+
+/* 7. Persistent Sticky Bottom Action Bar */
+.setup-sticky-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 -4px 28px rgba(16, 27, 85, 0.08);
+  padding: 12px 32px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+#view-interview-setup:not(.active) .setup-sticky-bottom-bar {
+  display: none !important;
+}
+
+.setup-sticky-bar-container {
+  width: min(1240px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.ssb-status-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ssb-indicator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #E6F9F2;
+  border: 1px solid #A7F3D0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #065F46;
+  white-space: nowrap;
+}
+
+.ssb-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: ssbPulse 2s infinite;
+}
+
+@keyframes ssbPulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.ssb-indicator-badge.invalid {
+  background: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #991B1B !important;
+}
+
+.ssb-indicator-badge.invalid .ssb-pulse-dot {
+  background: #EF4444 !important;
+  animation: none !important;
+}
+
+.ssb-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: #53658F;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.ssb-chip {
+  background: #F1F5F9;
+  padding: 3px 9px;
+  border-radius: 6px;
+  color: #1E293B;
+  border: 1px solid #E2E8F0;
+  font-size: 0.8125rem;
+}
+
+.ssb-chip-sep {
+  color: #CBD5E1;
+  font-weight: 400;
+}
+
+.btn-sticky-continue {
+  background: linear-gradient(135deg, #1677FF 0%, #792FFF 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  box-shadow: 0 6px 18px rgba(22, 119, 255, 0.35) !important;
+  border: none !important;
+  white-space: nowrap !important;
+  padding: 12px 28px !important;
+  border-radius: 12px !important;
+  font-size: 0.95rem !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  cursor: pointer;
+}
+
+.btn-sticky-continue:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(22, 119, 255, 0.45) !important;
+}
+
+.btn-sticky-continue:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 8. Dark Mode Support */
+[data-theme="dark"] #view-interview-setup .setup-card.compact .setup-card-title {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-card.compact .setup-card-hint {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .setup-sticky-bottom-bar {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border-top: 1px solid rgba(51, 65, 85, 0.8) !important;
+  box-shadow: 0 -4px 28px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .ssb-indicator-badge {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #34D399 !important;
+}
+
+[data-theme="dark"] .ssb-indicator-badge.invalid {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #F87171 !important;
+}
+
+[data-theme="dark"] .ssb-chip {
+  background: #1E293B !important;
+  color: #E2E8F0 !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .ssb-pills-row {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .ssb-chip-sep {
+  color: #475569 !important;
+}
+
+/* 9. Responsive Breakpoints */
+@media (max-width: 1024px) {
+  #view-interview-setup .setup-main-grid {
+    grid-template-columns: 1fr 300px;
+    gap: 16px;
+  }
+  .setup-config-subgrid {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 900px) {
+  #view-interview-setup .setup-main-grid {
+    grid-template-columns: 1fr;
+  }
+  #view-interview-setup .setup-summary-col {
+    position: static;
+    order: -1; /* Place summary teaser near top on tablet/mobile */
+    margin-bottom: 12px;
+  }
+  .setup-config-subgrid {
+    grid-template-columns: 1fr;
+  }
+  .setup-mic-stage.compact {
+    display: none;
+  }
+  .ssc-chevron {
+    display: inline-block;
+  }
+  #ssc-mobile-toggle-btn {
+    cursor: pointer;
+  }
+  .summary-sticky-card.collapsed .ssc-collapsible-content {
+    display: none;
+  }
+  .summary-sticky-card.collapsed .ssc-mobile-teaser {
+    display: block;
+  }
+  .summary-sticky-card.collapsed .ssc-chevron {
+    transform: rotate(180deg);
+  }
+  .ssb-pills-row {
+    display: none; /* Hide detailed row on tablet/mobile to keep bottom bar concise */
+  }
+}
+
+@media (max-width: 640px) {
+  .setup-sticky-bottom-bar {
+    padding: 10px 16px;
+  }
+  .setup-sticky-bar-container {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .ssb-indicator-badge {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+  }
+  .btn-sticky-continue {
+    padding: 10px 18px !important;
+    font-size: 0.875rem !important;
+  }
+  .setup-grid-4.compact-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .option-pill-grid.trio.compact-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .setup-grid-4.compact-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .option-pill-grid.trio.compact-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .btn-sticky-continue span {
+    font-size: 0.8125rem;
+  }
+}
+
+
+/* Comprehensive Dark Mode Theme Tokens for Interview Setup */
+[data-theme="dark"] #view-interview-setup .setup-card,
+[data-theme="dark"] #view-interview-setup .summary-sticky-card {
+  background: #111C44 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-hero-title,
+[data-theme="dark"] #view-interview-setup .setup-card-title,
+[data-theme="dark"] #view-interview-setup .ssc-title,
+[data-theme="dark"] #view-interview-setup .soc-title,
+[data-theme="dark"] #view-interview-setup .stc-title,
+[data-theme="dark"] #view-interview-setup .prp-filename {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-hero-subtitle,
+[data-theme="dark"] #view-interview-setup .setup-card-hint,
+[data-theme="dark"] #view-interview-setup .soc-sub,
+[data-theme="dark"] #view-interview-setup .stc-desc,
+[data-theme="dark"] #view-interview-setup .prp-meta-stats,
+[data-theme="dark"] #view-interview-setup .ssc-row-label {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-opt-card,
+[data-theme="dark"] #view-interview-setup .setup-type-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-opt-card:hover,
+[data-theme="dark"] #view-interview-setup .setup-type-card:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(22, 119, 255, 0.4) !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-opt-card.active,
+[data-theme="dark"] #view-interview-setup .setup-type-card.active {
+  background: rgba(22, 119, 255, 0.16) !important;
+  border-color: #1677FF !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-custom-dropdown {
+  background: #0B1437 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-resume-preview {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-featured-projects-row {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] #view-interview-setup .ssc-header {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] #view-interview-setup .ssc-row {
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-theme="dark"] #view-interview-setup .ssc-val {
+  color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] #view-interview-setup .personalized-info-box {
+  background: rgba(22, 119, 255, 0.1) !important;
+  border-color: rgba(22, 119, 255, 0.25) !important;
+  color: #93C5FD !important;
+}
+
+[data-theme="dark"] #view-interview-setup .btn-back-link {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] #view-interview-setup .setup-speech-bubble {
+  background: #0B1437 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #F8FAFC !important;
+}
