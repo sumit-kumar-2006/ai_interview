@@ -6,3 +6,5 @@ uploads/
 tmp_chrome_profile/
 *.log
 .pytest_cache/
+pwsh.cmd
+
