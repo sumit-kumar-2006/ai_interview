@@ -278,3 +278,4 @@ with open("FINAL_HANDOVER.md", "w", encoding="utf-8") as f:
     f.write(handover_content)
 
 print("Generated FINAL_HANDOVER.md.")
+
