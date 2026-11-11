@@ -73,8 +73,8 @@ def main():
                 initInterviewSetupPage();
                 
                 const stickyBar = document.getElementById('setup-sticky-bottom-bar');
-                const stickyBtn = document.getElementById('btn-sticky-continue-device-check');
-                const cardBtn = document.getElementById('btn-continue-device-check');
+                const primaryBtn = document.getElementById('btn-continue-device-check');
+                const duplicateInSummary = document.querySelector('.summary-sticky-card #btn-continue-device-check');
                 const statusDot = document.getElementById('ssb-status-dot');
                 const statusText = document.getElementById('ssb-status-text');
                 
@@ -82,18 +82,17 @@ def main():
                     setupActive: document.getElementById('view-interview-setup')?.classList.contains('active'),
                     hasStickyBar: !!stickyBar,
                     stickyBarVisible: stickyBar ? getComputedStyle(stickyBar).display !== 'none' : false,
-                    hasStickyBtn: !!stickyBtn,
-                    stickyBtnEnabled: stickyBtn ? !stickyBtn.disabled : false,
-                    hasCardBtn: !!cardBtn,
-                    cardBtnEnabled: cardBtn ? !cardBtn.disabled : false,
+                    hasPrimaryBtn: !!primaryBtn,
+                    primaryBtnEnabled: primaryBtn ? !primaryBtn.disabled : false,
+                    duplicateRemoved: duplicateInSummary === null,
                     statusText: statusText ? statusText.textContent.trim() : ''
                 };
             })()
         """, msg_id=mid)
         print("  Result:", res)
-        assert res["setupActive"] and res["hasStickyBar"] and res["stickyBarVisible"] and res["hasStickyBtn"]
-        test_results["Test 1 (Setup Init & Sticky Bar)"] = "PASS"
-        print("  -> PASS: Interview Setup active with visible persistent sticky bottom action bar.")
+        assert res["setupActive"] and res["hasStickyBar"] and res["stickyBarVisible"] and res["hasPrimaryBtn"] and res["duplicateRemoved"]
+        test_results["Test 1 (Setup Init & Single Sticky Action)"] = "PASS"
+        print("  -> PASS: Interview Setup active with single primary continue action in sticky bottom bar and zero duplicates.")
 
         # TEST 2: Real-time Selection Changes & Summary Synchronization
         print("\n[TEST 2] Testing Selection Changes & Real-time Live Synchronization...")
@@ -170,41 +169,37 @@ def main():
                 currentInterviewConfig.target_role = '';
                 updateSetupSummary();
                 
-                const stickyBtnInvalid = document.getElementById('btn-sticky-continue-device-check')?.disabled;
-                const cardBtnInvalid = document.getElementById('btn-continue-device-check')?.disabled;
+                const primaryBtnInvalid = document.getElementById('btn-continue-device-check')?.disabled;
                 const statusInvalid = document.getElementById('ssb-status-text')?.textContent;
                 
                 // Restore role
                 currentInterviewConfig.target_role = oldRole;
                 updateSetupSummary();
                 
-                const stickyBtnValid = !document.getElementById('btn-sticky-continue-device-check')?.disabled;
-                const cardBtnValid = !document.getElementById('btn-continue-device-check')?.disabled;
+                const primaryBtnValid = !document.getElementById('btn-continue-device-check')?.disabled;
                 const statusValid = document.getElementById('ssb-status-text')?.textContent;
                 
                 return {
-                    stickyBtnInvalid,
-                    cardBtnInvalid,
+                    primaryBtnInvalid,
                     statusInvalid,
-                    stickyBtnValid,
-                    cardBtnValid,
+                    primaryBtnValid,
                     statusValid
                 };
             })()
         """, msg_id=mid)
         print("  Result:", res)
-        assert res["stickyBtnInvalid"] and res["cardBtnInvalid"] and res["statusInvalid"] == "Select required options"
-        assert res["stickyBtnValid"] and res["cardBtnValid"] and res["statusValid"] == "Configuration Ready"
+        assert res["primaryBtnInvalid"] and res["statusInvalid"] == "Select required options"
+        assert res["primaryBtnValid"] and res["statusValid"] == "Configuration Ready"
         test_results["Test 3 (Validation & Disabled States)"] = "PASS"
-        print("  -> PASS: Incomplete configuration properly disables continue buttons and shows feedback.")
+        print("  -> PASS: Incomplete configuration properly disables primary continue button and shows feedback.")
 
         # TEST 4: Sticky Continue Click -> Preserves Config & Navigates to Device Check
         print("\n[TEST 4] Testing Sticky Continue Action & Transition to Device Check...")
         mid += 1
         res = evaluate_js(ws, """
             (() => {
-                const stickyBtn = document.getElementById('btn-sticky-continue-device-check');
-                stickyBtn.click();
+                const continueBtn = document.getElementById('btn-continue-device-check');
+                continueBtn.click();
                 
                 const devView = document.getElementById('view-device-check');
                 const setupView = document.getElementById('view-interview-setup');
@@ -289,8 +284,7 @@ def main():
             })()
         """, msg_id=mid)
         print("  Result:", res)
-        assert res["subgrids"] == 3
-        # Before was ~2405px
+        assert res["subgrids"] == 2
         print(f"  Height reduced to: {res['scrollH']}px across {res['subgrids']} configuration sub-grids.")
         test_results["Test 7 (Scroll Reduction Metric)"] = "PASS"
         print("  -> PASS: Smart sub-grids successfully cut vertical sprawl.")

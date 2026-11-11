@@ -6165,12 +6165,29 @@ function initInterviewSetupPage() {
   const backDashBtn = document.getElementById('btn-setup-back-dash');
   if (backDashBtn) backDashBtn.onclick = () => navigateToView('dashboard');
 
-  // Continue to Device Check (In-Card & Persistent Sticky Action Bar)
+  // Continue to Device Check (Primary Action in Bottom Sticky Action Bar)
   const continueDeviceBtn = document.getElementById('btn-continue-device-check');
   if (continueDeviceBtn) continueDeviceBtn.onclick = () => handleProceedToDeviceCheck();
 
   const stickyContinueBtn = document.getElementById('btn-sticky-continue-device-check');
-  if (stickyContinueBtn) stickyContinueBtn.onclick = () => handleProceedToDeviceCheck();
+  if (stickyContinueBtn && stickyContinueBtn !== continueDeviceBtn) {
+    stickyContinueBtn.onclick = () => handleProceedToDeviceCheck();
+  }
+
+  // Quick Role Selection Chips 1-Click Wiring
+  const roleSelectEl = document.getElementById('setup-role-select');
+  const roleChips = document.querySelectorAll('.setup-role-quick-chips .role-chip');
+  roleChips.forEach(chip => {
+    chip.onclick = () => {
+      roleChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      if (roleSelectEl) {
+        roleSelectEl.value = chip.dataset.role;
+        currentInterviewConfig.target_role = chip.dataset.role;
+        updateSetupSummary();
+      }
+    };
+  });
 
   // Mobile Summary Accordion Toggle
   const sscMobileToggleBtn = document.getElementById('ssc-mobile-toggle-btn');
@@ -6525,6 +6542,12 @@ function updateSetupSummary() {
   const ssbBadge = document.querySelector('.ssb-indicator-badge');
 
   if (ssbRole) ssbRole.textContent = currentInterviewConfig.target_role || 'Role';
+  
+  // Synchronize active state of quick role pills
+  const allRoleChips = document.querySelectorAll('.setup-role-quick-chips .role-chip');
+  allRoleChips.forEach(c => {
+    c.classList.toggle('active', c.dataset.role === currentInterviewConfig.target_role);
+  });
   if (ssbExp) ssbExp.textContent = currentInterviewConfig.experience_level || 'Level';
   if (ssbType) ssbType.textContent = (currentInterviewConfig.interview_type || 'Mixed').replace(' Interview', '');
   if (ssbDiff) ssbDiff.textContent = currentInterviewConfig.difficulty || 'Medium';

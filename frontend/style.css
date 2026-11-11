@@ -13449,3 +13449,388 @@ body {
   border-color: rgba(255, 255, 255, 0.12) !important;
   color: #F8FAFC !important;
 }
+
+
+/* ==========================================================================
+   FINAL UI/UX REFINEMENTS — INTERVIEW SETUP (PHASE 1-6)
+   ========================================================================== */
+
+/* 1. Eliminate Excessive Whitespace & Natural Card Heights */
+#view-interview-setup .setup-card {
+  height: auto !important;
+  min-height: auto !important;
+  display: flex;
+  flex-direction: column;
+}
+
+#view-interview-setup .setup-card-header {
+  margin-bottom: 12px !important;
+}
+
+/* 2. Horizontal Interview Type Grid (3 Balanced Columns) */
+.setup-type-grid-horizontal {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.setup-type-grid-horizontal .setup-type-card {
+  padding: 14px 16px !important;
+  min-height: auto !important;
+  border-radius: 14px !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setup-type-grid-horizontal .stc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.setup-type-grid-horizontal .stc-title {
+  font-size: 0.9375rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 3px 0 !important;
+  color: #101B55;
+}
+
+.setup-type-grid-horizontal .stc-desc {
+  font-size: 0.75rem !important;
+  color: #53658F;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+}
+
+/* 3. Horizontal Interview Mode Grid (2 Balanced Cards) */
+.setup-mode-grid-horizontal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.setup-mode-grid-horizontal .setup-mode-card {
+  padding: 14px 18px !important;
+  min-height: auto !important;
+  border-radius: 14px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setup-mode-grid-horizontal .smc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setup-mode-grid-horizontal .smc-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.setup-mode-grid-horizontal .soc-title {
+  font-size: 0.9375rem !important;
+  font-weight: 700 !important;
+  color: #101B55;
+}
+
+.setup-mode-grid-horizontal .soc-sub {
+  font-size: 0.78125rem !important;
+  color: #53658F;
+  line-height: 1.35 !important;
+}
+
+/* 4. Quick Role Selector Chips */
+.setup-role-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.role-chip {
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.role-chip:hover {
+  background: #E2E8F0;
+  color: #1E293B;
+  border-color: #CBD5E1;
+}
+
+.role-chip.active {
+  background: #EFF6FF;
+  border-color: #1677FF;
+  color: #1677FF;
+  font-weight: 700;
+}
+
+/* 5. Refined Interview Summary (No Duplicates, Natural Alignment) */
+#view-interview-setup .setup-summary-col {
+  position: sticky;
+  top: 84px;
+  align-self: start;
+  width: 320px;
+  flex-shrink: 0;
+}
+
+#view-interview-setup .summary-sticky-card {
+  padding: 20px !important;
+  border-radius: 18px !important;
+  border: 1.5px solid #EAF0FA;
+  box-shadow: 0 6px 24px rgba(16, 27, 85, 0.05);
+}
+
+#view-interview-setup .summary-sticky-card .ssc-header {
+  border-bottom: 1px solid #EAF0FA;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+#view-interview-setup .summary-sticky-card .ssc-body-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+#view-interview-setup .summary-sticky-card .ssc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 !important;
+  font-size: 0.8125rem !important;
+  border-bottom: 1px solid #F8FAFC;
+}
+
+#view-interview-setup .summary-sticky-card .ssc-val {
+  font-weight: 700;
+  color: #101B55;
+  font-size: 0.8125rem;
+}
+
+#view-interview-setup .summary-sticky-card .personalized-info-box {
+  padding: 8px 12px !important;
+  margin-top: 10px !important;
+  margin-bottom: 0 !important;
+  background: #F0F6FF;
+  border: 1px solid #DBEAFE;
+  border-radius: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+#view-interview-setup .summary-sticky-card .personalized-info-box p {
+  margin: 0 !important;
+  font-size: 0.71875rem !important;
+  line-height: 1.35 !important;
+  color: #1E40AF;
+}
+
+/* 6. Refined Floating Bottom Sticky Action Bar */
+.setup-sticky-bottom-bar {
+  position: fixed !important;
+  bottom: 16px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(1200px, calc(100% - 32px)) !important;
+  border-radius: 16px !important;
+  padding: 10px 24px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 10px 30px rgba(16, 27, 85, 0.1) !important;
+}
+
+.setup-sticky-bar-container {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+}
+
+.ssb-status-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+}
+
+.ssb-indicator-badge {
+  padding: 5px 12px !important;
+  font-size: 0.78125rem !important;
+}
+
+.btn-sticky-continue {
+  padding: 10px 24px !important;
+  font-size: 0.9rem !important;
+  border-radius: 10px !important;
+}
+
+/* 7. Setup Integrated Footer Layout */
+.setup-integrated-footer {
+  margin-top: 40px !important;
+  border-top: 1px solid #EAF0FA !important;
+  padding-top: 24px !important;
+  padding-bottom: 24px !important;
+}
+
+.setup-integrated-footer .footer-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.setup-integrated-footer .footer-left-brand {
+  max-width: 320px;
+}
+
+.setup-integrated-footer .footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.setup-integrated-footer .footer-brand-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #101B55;
+}
+
+.setup-integrated-footer .footer-tagline {
+  font-size: 0.8125rem;
+  color: #53658F;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.setup-integrated-footer .footer-center-copy {
+  font-size: 0.8125rem;
+  color: #94A3B8;
+  align-self: center;
+}
+
+.setup-integrated-footer .footer-links-grid {
+  display: flex;
+  gap: 36px;
+}
+
+.setup-integrated-footer .footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setup-integrated-footer .footer-heading {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #101B55;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.setup-integrated-footer .footer-link {
+  font-size: 0.8125rem;
+  color: #53658F;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.setup-integrated-footer .footer-link:hover {
+  color: #1677FF;
+}
+
+/* 8. Dark Mode Refinements */
+[data-theme="dark"] .role-chip {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .role-chip:hover {
+  background: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .role-chip.active {
+  background: rgba(22, 119, 255, 0.2) !important;
+  border-color: #1677FF !important;
+  color: #60A5FA !important;
+}
+
+[data-theme="dark"] .setup-type-grid-horizontal .stc-title,
+[data-theme="dark"] .setup-mode-grid-horizontal .soc-title {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .setup-type-grid-horizontal .stc-desc,
+[data-theme="dark"] .setup-mode-grid-horizontal .soc-sub {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .setup-sticky-bottom-bar {
+  background: rgba(15, 23, 42, 0.94) !important;
+  border-color: rgba(51, 65, 85, 0.85) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .setup-integrated-footer {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .setup-integrated-footer .footer-brand-name,
+[data-theme="dark"] .setup-integrated-footer .footer-heading {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .setup-integrated-footer .footer-tagline,
+[data-theme="dark"] .setup-integrated-footer .footer-link {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .setup-integrated-footer .footer-link:hover {
+  color: #60A5FA !important;
+}
+
+/* 9. Responsive Adjustments */
+@media (max-width: 900px) {
+  .setup-type-grid-horizontal {
+    grid-template-columns: 1fr;
+  }
+  .setup-mode-grid-horizontal {
+    grid-template-columns: 1fr;
+  }
+  .setup-sticky-bottom-bar {
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding: 10px 16px !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+}
