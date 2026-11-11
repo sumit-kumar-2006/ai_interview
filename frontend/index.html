@@ -3812,15 +3812,20 @@
           </svg>
         </div>
 
-        <!-- HERO SECTION WITH TITLE AND 3D ILLUSTRATION -->
+        <!-- HERO SECTION WITH TITLE AND STREAMLINED 3D BADGE -->
         <div class="dc-hero-section">
           <div class="dc-hero-left">
-            <button class="btn-back-dashboard" id="btn-device-back-dash">
-              <span class="btn-back-arrow">←</span>
-              <span>Back to Dashboard</span>
-            </button>
+            <div class="dc-nav-breadcrumbs">
+              <button class="btn-back-dashboard" id="btn-device-back-setup">
+                <span class="btn-back-arrow">←</span>
+                <span>Back to Setup</span>
+              </button>
+              <button class="btn-back-dashboard btn-back-secondary-link" id="btn-device-back-dash" title="Go to Dashboard">
+                <span>Dashboard</span>
+              </button>
+            </div>
             <h1 class="dc-hero-title">Check your <span class="hero-name-gradient">setup</span></h1>
-            <p class="dc-hero-subtitle">Make sure your camera and microphone are working before you begin.</p>
+            <p class="dc-hero-subtitle">Make sure your camera and microphone are working smoothly before you begin.</p>
             <div class="dc-curved-underline" aria-hidden="true">
               <svg width="68" height="8" viewBox="0 0 68 8" fill="none">
                 <path d="M2 5C20 1.5 48 1.5 66 5" stroke="url(#bluePurpleGradDC)" stroke-width="3" stroke-linecap="round"/>
@@ -3834,18 +3839,22 @@
             </div>
           </div>
           <div class="dc-hero-right">
-            <img src="assets/illustrations/device_check_hero_3d.png" alt="Device setup 3D illustration" class="dc-hero-3d-img" />
+            <div class="dc-hero-illustration-card">
+              <img src="assets/illustrations/device_check_hero_3d.png" alt="Device setup illustration" class="dc-hero-3d-img" />
+            </div>
           </div>
         </div>
 
-        <!-- MAIN TWO-COLUMN DEVICE CHECK GRID -->
+        <!-- MAIN BALANCED TWO-COLUMN WORKSPACE -->
         <div class="dc-main-grid">
 
-          <!-- LEFT COLUMN (APPROX 64%) -->
+          <!-- LEFT COLUMN (APPROX 64%): UNIFIED MEDIA TESTING CONSOLE -->
           <div class="dc-col-primary">
 
-            <!-- 1. CAMERA PREVIEW CARD -->
-            <div class="dc-card-panel dc-card-camera">
+            <!-- UNIFIED CAMERA & AUDIO CARD -->
+            <div class="dc-card-panel dc-card-media-console">
+              
+              <!-- Camera Header & Controls -->
               <div class="dcc-header-flex">
                 <div class="dcc-title-wrap">
                   <div class="dcc-icon-bubble">
@@ -3854,7 +3863,10 @@
                       <circle cx="12" cy="13" r="4"></circle>
                     </svg>
                   </div>
-                  <h3>Camera Preview</h3>
+                  <div>
+                    <h3>Camera Preview</h3>
+                    <span class="dcc-subtitle">Webcam video stream & framing</span>
+                  </div>
                 </div>
                 <span class="status-badge-pill pill-active" id="cam-status-pill">
                   <span class="status-dot-active">●</span> CAMERA ACTIVE
@@ -3872,7 +3884,7 @@
                 </div>
               </div>
 
-              <!-- Live Camera Viewport -->
+              <!-- Live Camera Viewport (16:9 Aspect Ratio) -->
               <div class="camera-viewport-box">
                 <video id="device-check-video-el" autoplay playsinline muted class="camera-stream-video"></video>
 
@@ -3904,139 +3916,183 @@
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- 2. MICROPHONE & AUDIO LEVEL CARD -->
-            <div class="dc-card-panel dc-card-microphone">
-              <div class="dcc-header-flex">
-                <div class="dcc-title-wrap">
-                  <div class="dcc-icon-bubble">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                      <line x1="12" y1="19" x2="12" y2="23"></line>
-                      <line x1="8" y1="23" x2="16" y2="23"></line>
-                    </svg>
-                  </div>
-                  <h3>Microphone & Audio Level</h3>
-                </div>
-                <span class="status-badge-pill pill-active" id="mic-status-pill">
-                  <span class="status-dot-active">●</span> MICROPHONE ACTIVE
-                </span>
-              </div>
-
-              <div class="mic-level-box">
-                <div class="mlb-header">
-                  <span class="mlb-label">Microphone Level</span>
-                  <span class="mlb-detected" id="mic-activity-label">
-                    <span class="mic-bars-icon">📶</span> Audio detected!
-                  </span>
-                </div>
-                <div class="audio-level-track">
-                  <div class="audio-level-fill-gradient" id="mic-level-fill" style="width: 45%;"></div>
-                </div>
-              </div>
-
-              <!-- Mic Error Overlay -->
-              <div class="mic-perm-error hidden" id="mic-perm-error">
-                <p>Microphone access is required to transcribe and analyze your spoken interview responses.</p>
-                <button class="btn btn-secondary btn-sm" id="btn-request-mic-perm">Retry Microphone Access</button>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- RIGHT COLUMN (APPROX 32%) -->
-          <div class="dc-col-secondary">
-
-            <!-- 1. DEVICE & SETUP CHECKLIST CARD -->
-            <div class="dc-card-panel dc-card-checklist">
-              <div class="dcc-header-flex" style="margin-bottom: 20px;">
-                <div class="dcc-title-wrap">
-                  <div class="dcc-icon-bubble">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                    </svg>
-                  </div>
-                  <h3>Device & Setup Checklist</h3>
-                </div>
-              </div>
-
-              <div class="chk-rows-stack">
-                <!-- Row 1: Camera Stream -->
-                <div class="chk-row-item" id="chk-camera-item">
-                  <div class="cri-left">
-                    <div class="cri-icon-box cri-icon-blue">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                        <circle cx="12" cy="13" r="4"></circle>
-                      </svg>
-                    </div>
-                    <div class="cri-details">
-                      <strong class="cri-title">Camera Stream</strong>
-                      <span class="cri-sub" id="chk-cam-state">Active & Streaming</span>
-                    </div>
-                  </div>
-                  <span class="cri-check-badge check-pass" id="chk-cam-icon">✓</span>
-                </div>
-
-                <!-- Row 2: Microphone Input -->
-                <div class="chk-row-item" id="chk-mic-item">
-                  <div class="cri-left">
-                    <div class="cri-icon-box cri-icon-blue">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <!-- INTEGRATED COMPACT MICROPHONE & AUDIO LEVEL PANEL -->
+              <div class="dc-mic-integrated-panel">
+                <div class="dc-mic-header">
+                  <div class="dc-mic-title-wrap">
+                    <div class="dcc-icon-bubble dcc-icon-bubble-sm">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                         <line x1="12" y1="19" x2="12" y2="23"></line>
                         <line x1="8" y1="23" x2="16" y2="23"></line>
                       </svg>
                     </div>
-                    <div class="cri-details">
-                      <strong class="cri-title">Microphone Input</strong>
-                      <span class="cri-sub" id="chk-mic-state">Input Detected</span>
+                    <div>
+                      <span class="dc-mic-title">Microphone & Audio Input</span>
+                      <span class="status-badge-pill pill-active dc-mic-pill" id="mic-status-pill">
+                        <span class="status-dot-active">●</span> MICROPHONE ACTIVE
+                      </span>
                     </div>
                   </div>
-                  <span class="cri-check-badge check-pass" id="chk-mic-icon">✓</span>
+                  <span class="mlb-detected" id="mic-activity-label">
+                    <span class="mic-bars-icon">📶</span> Audio detected!
+                  </span>
                 </div>
 
-                <!-- Row 3: Browser Permissions -->
-                <div class="chk-row-item" id="chk-webrtc-item">
-                  <div class="cri-left">
-                    <div class="cri-icon-box cri-icon-blue">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                      </svg>
-                    </div>
-                    <div class="cri-details">
-                      <strong class="cri-title">Browser Permissions</strong>
-                      <span class="cri-sub" id="chk-perm-state">WebRTC Supported</span>
-                    </div>
-                  </div>
-                  <span class="cri-check-badge check-pass" id="chk-perm-icon">✓</span>
+                <div class="audio-level-track">
+                  <div class="audio-level-fill-gradient" id="mic-level-fill" style="width: 45%;"></div>
                 </div>
 
-                <!-- Row 4: Interview Configuration -->
-                <div class="chk-row-item" id="chk-config-item">
-                  <div class="cri-left">
-                    <div class="cri-icon-box cri-icon-purple">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                      </svg>
-                    </div>
-                    <div class="cri-details">
-                      <strong class="cri-title">Interview Configuration</strong>
-                      <span class="cri-sub" id="chk-config-state">Configured</span>
-                    </div>
-                  </div>
-                  <span class="cri-check-badge check-pass" id="chk-config-icon">✓</span>
+                <!-- Mic Error Overlay -->
+                <div class="mic-perm-error hidden" id="mic-perm-error">
+                  <p>Microphone access is required to transcribe and analyze your spoken interview responses.</p>
+                  <button class="btn btn-secondary btn-sm" id="btn-request-mic-perm">Retry Microphone Access</button>
                 </div>
               </div>
 
-              <!-- Mint Green Readiness Card -->
+            </div>
+
+          </div>
+
+          <!-- RIGHT COLUMN (APPROX 36%): UNIFIED COHESIVE SIDEBAR -->
+          <div class="dc-col-secondary">
+
+            <!-- COMBINED SIDEBAR CARD: CHECKLIST + CONFIG + STATUS + ACTION -->
+            <div class="dc-card-panel dc-sidebar-unified">
+
+              <!-- SECTION 1: DEVICE & SETUP CHECKLIST -->
+              <div class="dc-sidebar-section">
+                <div class="dcc-header-flex dc-sidebar-header">
+                  <div class="dcc-title-wrap">
+                    <div class="dcc-icon-bubble">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                      </svg>
+                    </div>
+                    <h3>Device & Setup Checklist</h3>
+                  </div>
+                </div>
+
+                <div class="chk-rows-stack">
+                  <!-- Row 1: Camera Stream -->
+                  <div class="chk-row-item" id="chk-camera-item">
+                    <div class="cri-left">
+                      <div class="cri-icon-box cri-icon-blue">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                          <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                      </div>
+                      <div class="cri-details">
+                        <strong class="cri-title">Camera Stream</strong>
+                        <span class="cri-sub" id="chk-cam-state">Active & Streaming</span>
+                      </div>
+                    </div>
+                    <span class="cri-check-badge check-pass" id="chk-cam-icon">✓</span>
+                  </div>
+
+                  <!-- Row 2: Microphone Input -->
+                  <div class="chk-row-item" id="chk-mic-item">
+                    <div class="cri-left">
+                      <div class="cri-icon-box cri-icon-blue">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                          <line x1="12" y1="19" x2="12" y2="23"></line>
+                          <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                      </div>
+                      <div class="cri-details">
+                        <strong class="cri-title">Microphone Input</strong>
+                        <span class="cri-sub" id="chk-mic-state">Input Detected</span>
+                      </div>
+                    </div>
+                    <span class="cri-check-badge check-pass" id="chk-mic-icon">✓</span>
+                  </div>
+
+                  <!-- Row 3: Browser Permissions -->
+                  <div class="chk-row-item" id="chk-webrtc-item">
+                    <div class="cri-left">
+                      <div class="cri-icon-box cri-icon-blue">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="2" y1="12" x2="22" y2="12"></line>
+                          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                      </div>
+                      <div class="cri-details">
+                        <strong class="cri-title">Browser Permissions</strong>
+                        <span class="cri-sub" id="chk-perm-state">WebRTC Supported</span>
+                      </div>
+                    </div>
+                    <span class="cri-check-badge check-pass" id="chk-perm-icon">✓</span>
+                  </div>
+
+                  <!-- Row 4: Interview Configuration -->
+                  <div class="chk-row-item" id="chk-config-item">
+                    <div class="cri-left">
+                      <div class="cri-icon-box cri-icon-purple">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="3"></circle>
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                      </div>
+                      <div class="cri-details">
+                        <strong class="cri-title">Interview Configuration</strong>
+                        <span class="cri-sub" id="chk-config-state">Configured</span>
+                      </div>
+                    </div>
+                    <span class="cri-check-badge check-pass" id="chk-config-icon">✓</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 2: SELECTED INTERVIEW CONFIGURATION (INTEGRATED COMPACTLY) -->
+              <div class="dc-sidebar-section dc-sidebar-config-section">
+                <div class="dc-section-divider"></div>
+                <div class="dc-subhead-row">
+                  <div class="dc-subhead-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                      <polyline points="2 17 12 22 22 17"></polyline>
+                      <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                    <span>Selected Interview Config</span>
+                  </div>
+                </div>
+
+                <div class="config-table-rows dc-config-compact-rows">
+                  <div class="ctr-row">
+                    <span class="ctr-label">Target Role</span>
+                    <strong class="ctr-value" id="dc-sum-role">Backend Developer</strong>
+                  </div>
+                  <div class="ctr-row">
+                    <span class="ctr-label">Experience</span>
+                    <strong class="ctr-value" id="dc-sum-exp">Mid Level</strong>
+                  </div>
+                  <div class="ctr-row">
+                    <span class="ctr-label">Type</span>
+                    <strong class="ctr-value" id="dc-sum-type">Technical Interview</strong>
+                  </div>
+                  <div class="ctr-row">
+                    <span class="ctr-label">Difficulty</span>
+                    <strong class="ctr-value" id="dc-sum-diff">Medium</strong>
+                  </div>
+                  <div class="ctr-row">
+                    <span class="ctr-label">Questions</span>
+                    <strong class="ctr-value" id="dc-sum-count">5 Questions</strong>
+                  </div>
+                  <div class="ctr-row">
+                    <span class="ctr-label">Mode</span>
+                    <strong class="ctr-value" id="dc-sum-mode">Video Interview</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 3: READINESS BANNER -->
               <div class="ready-mint-banner ready" id="readiness-status-card">
                 <div class="rmb-check-circle" id="rsc-icon">✓</div>
                 <div class="rmb-content">
@@ -4045,58 +4101,17 @@
                 </div>
               </div>
 
-              <!-- Start Interview CTA Button -->
+              <!-- SECTION 4: SINGLE PROMINENT START INTERVIEW CTA -->
               <button class="btn-start-interview-gradient" id="btn-start-interview-ready">
                 <span>▶ Start Interview →</span>
               </button>
-            </div>
 
-            <!-- 2. SELECTED INTERVIEW CONFIG CARD -->
-            <div class="dc-card-panel dc-card-config">
-              <div class="dcc-header-flex" style="margin-bottom: 16px;">
-                <div class="dcc-title-wrap">
-                  <div class="dcc-icon-bubble">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="3"></circle>
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                  </div>
-                  <h3>Selected Interview Config</h3>
-                </div>
+              <!-- SECTION 5: PRIVACY NOTE -->
+              <div class="dc-privacy-row">
+                <span class="dc-privacy-lock">🔒</span>
+                <p>Your camera and microphone are used only during the interview to evaluate your responses and presence.</p>
               </div>
 
-              <div class="config-table-rows">
-                <div class="ctr-row">
-                  <span class="ctr-label">Target Role</span>
-                  <strong class="ctr-value" id="dc-sum-role">Backend Developer</strong>
-                </div>
-                <div class="ctr-row">
-                  <span class="ctr-label">Experience</span>
-                  <strong class="ctr-value" id="dc-sum-exp">Mid Level</strong>
-                </div>
-                <div class="ctr-row">
-                  <span class="ctr-label">Type</span>
-                  <strong class="ctr-value" id="dc-sum-type">Mixed Interview</strong>
-                </div>
-                <div class="ctr-row">
-                  <span class="ctr-label">Difficulty</span>
-                  <strong class="ctr-value" id="dc-sum-diff">Medium</strong>
-                </div>
-                <div class="ctr-row">
-                  <span class="ctr-label">Questions</span>
-                  <strong class="ctr-value" id="dc-sum-count">5 Questions</strong>
-                </div>
-                <div class="ctr-row">
-                  <span class="ctr-label">Mode</span>
-                  <strong class="ctr-value" id="dc-sum-mode">Video Interview</strong>
-                </div>
-              </div>
-            </div>
-
-            <!-- 3. PRIVACY INFORMATION NOTE -->
-            <div class="dc-privacy-row">
-              <span class="dc-privacy-lock">🔒</span>
-              <p>Your camera and microphone are used only during the interview to evaluate your responses and presence.</p>
             </div>
 
           </div>

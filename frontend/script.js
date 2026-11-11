@@ -6621,12 +6621,21 @@ function initDeviceCheckPage() {
   if (document.getElementById('dc-sum-count')) document.getElementById('dc-sum-count').textContent = `${currentInterviewConfig.question_count} Questions`;
   if (document.getElementById('dc-sum-mode')) document.getElementById('dc-sum-mode').textContent = currentInterviewConfig.mode;
 
-  // Bind Navigation Buttons (Back to Dashboard or Setup)
-  const backBtn = document.getElementById('btn-device-back-dash') || document.getElementById('btn-device-back-setup');
-  if (backBtn) backBtn.onclick = () => {
-    stopDeviceCheckStreams(true);
-    navigateToView('dashboard');
-  };
+  // Bind Navigation Buttons (Back to Setup or Dashboard)
+  const backSetupBtn = document.getElementById('btn-device-back-setup');
+  if (backSetupBtn) {
+    backSetupBtn.onclick = () => {
+      stopDeviceCheckStreams(true);
+      navigateToView('interview-setup');
+    };
+  }
+  const backDashBtn = document.getElementById('btn-device-back-dash');
+  if (backDashBtn && backDashBtn !== backSetupBtn) {
+    backDashBtn.onclick = () => {
+      stopDeviceCheckStreams(true);
+      navigateToView('dashboard');
+    };
+  }
 
   const reqCamBtn = document.getElementById('btn-request-cam-perm');
   if (reqCamBtn) reqCamBtn.onclick = () => requestDeviceStreams();
