@@ -2364,6 +2364,9 @@ function initRecordingEngine() {
   const ctrlRetryBtn = document.getElementById('btn-ctrl-retry');
   if (ctrlRetryBtn) ctrlRetryBtn.onclick = resetCurrentQuestionState;
 
+  const ctrlSavedRerecordBtn = document.getElementById('btn-ctrl-saved-rerecord');
+  if (ctrlSavedRerecordBtn) ctrlSavedRerecordBtn.onclick = handleReRecordCurrentQuestion;
+
   const copyBtn = document.getElementById('btn-copy-transcript');
   if (copyBtn) copyBtn.onclick = copyTranscriptToClipboard;
 
@@ -2424,12 +2427,17 @@ function switchUIState(targetState) {
   const asiIndicator = document.getElementById('answer-state-indicator');
   const asiText = document.getElementById('asi-state-text');
   const asiIcon = document.getElementById('asi-mic-icon');
+  const asiDot = document.querySelector('.asi-live-dot');
   const qAnsState = document.getElementById('question-ans-state');
   const waveformWrap = document.getElementById('waveform-wrap');
   const liveTranscriptPanel = document.getElementById('live-transcript-panel');
   const reviewCard = document.getElementById('transcript-review-card');
   const qResultCard = document.getElementById('question-result-card');
   const qCard = document.getElementById('question-card') || document.getElementById('interview-question-card');
+
+  // Top Progress Header Status Chip
+  const chipLive = document.getElementById('chip-live-status');
+  const chipLiveText = document.getElementById('live-chip-text');
 
   // Hide all bottom action groups first
   if (stateIdle) stateIdle.classList.add('hidden');
@@ -2444,82 +2452,115 @@ function switchUIState(targetState) {
     if (reviewCard) reviewCard.classList.add('hidden');
     if (qResultCard) qResultCard.classList.add('hidden');
     if (qCard) qCard.classList.remove('hidden');
+    if (liveTranscriptPanel) liveTranscriptPanel.classList.remove('hidden');
     if (asiText) asiText.textContent = 'Ready to answer';
     if (asiIcon) asiIcon.textContent = '🎙️';
     if (asiIndicator) asiIndicator.classList.remove('listening');
+    if (asiDot) asiDot.className = 'asi-live-dot';
     if (qAnsState) {
       qAnsState.textContent = '🎙 Ready to answer';
       qAnsState.className = 'q-badge q-badge-status status-idle';
     }
     if (waveformWrap) waveformWrap.classList.add('hidden');
     if (liveTranscriptPanel) liveTranscriptPanel.classList.remove('is-recording');
+
+    if (chipLive) chipLive.className = 'iph-chip iph-chip-live';
+    if (chipLiveText) chipLiveText.textContent = 'READY';
+
   } else if (targetState === UI_STATES.RECORDING) {
     if (stateRec) stateRec.classList.remove('hidden');
     if (reviewCard) reviewCard.classList.add('hidden');
     if (qResultCard) qResultCard.classList.add('hidden');
     if (qCard) qCard.classList.remove('hidden');
+    if (liveTranscriptPanel) liveTranscriptPanel.classList.remove('hidden');
     if (asiText) asiText.textContent = 'Listening...';
     if (asiIcon) asiIcon.textContent = '🔴';
     if (asiIndicator) asiIndicator.classList.add('listening');
+    if (asiDot) asiDot.className = 'asi-live-dot recording';
     if (qAnsState) {
       qAnsState.textContent = '● Listening...';
       qAnsState.className = 'q-badge q-badge-status status-recording';
     }
     if (waveformWrap) waveformWrap.classList.remove('hidden');
     if (liveTranscriptPanel) liveTranscriptPanel.classList.add('is-recording');
+
+    if (chipLive) chipLive.className = 'iph-chip iph-chip-live is-recording';
+    if (chipLiveText) chipLiveText.textContent = 'RECORDING';
+
   } else if (targetState === UI_STATES.REVIEW) {
     if (stateReview) stateReview.classList.remove('hidden');
     if (reviewCard) reviewCard.classList.remove('hidden');
     if (qResultCard) qResultCard.classList.add('hidden');
     if (qCard) qCard.classList.remove('hidden');
-    if (asiText) asiText.textContent = 'Review & Retry';
+    // Hide live listening panel during review so transcript is never duplicated!
+    if (liveTranscriptPanel) liveTranscriptPanel.classList.add('hidden');
+    if (asiText) asiText.textContent = 'Review & Verify';
     if (asiIcon) asiIcon.textContent = '✏️';
     if (asiIndicator) asiIndicator.classList.remove('listening');
+    if (asiDot) asiDot.className = 'asi-live-dot';
     if (qAnsState) {
       qAnsState.textContent = '✏️ Review your answer';
       qAnsState.className = 'q-badge q-badge-status status-idle';
     }
     if (waveformWrap) waveformWrap.classList.add('hidden');
     if (liveTranscriptPanel) liveTranscriptPanel.classList.remove('is-recording');
+
+    if (chipLive) chipLive.className = 'iph-chip iph-chip-live is-review';
+    if (chipLiveText) chipLiveText.textContent = 'REVIEW';
+
   } else if (targetState === UI_STATES.PROCESSING) {
     if (stateProc) stateProc.classList.remove('hidden');
-    if (asiText) asiText.textContent = 'Analyzing answer...';
+    if (asiText) asiText.textContent = 'Evaluating answer...';
     if (asiIcon) asiIcon.textContent = '⚡';
     if (asiIndicator) asiIndicator.classList.remove('listening');
+    if (asiDot) asiDot.className = 'asi-live-dot';
     if (qAnsState) {
       qAnsState.textContent = '⚡ Analyzing...';
       qAnsState.className = 'q-badge q-badge-status status-processing';
     }
     if (waveformWrap) waveformWrap.classList.add('hidden');
     if (liveTranscriptPanel) liveTranscriptPanel.classList.remove('is-recording');
+
+    if (chipLive) chipLive.className = 'iph-chip iph-chip-live is-evaluated';
+    if (chipLiveText) chipLiveText.textContent = 'EVALUATING';
+
   } else if (targetState === UI_STATES.SAVED) {
     if (stateSaved) stateSaved.classList.remove('hidden');
     if (reviewCard) reviewCard.classList.add('hidden');
     if (qResultCard) qResultCard.classList.remove('hidden');
     if (qCard) qCard.classList.add('hidden');
-    if (asiText) asiText.textContent = 'Answer saved ✓';
+    if (liveTranscriptPanel) liveTranscriptPanel.classList.add('hidden');
+    if (asiText) asiText.textContent = 'Answer evaluated ✓';
     if (asiIcon) asiIcon.textContent = '✓';
     if (asiIndicator) asiIndicator.classList.remove('listening');
+    if (asiDot) asiDot.className = 'asi-live-dot';
     if (qAnsState) {
-      qAnsState.textContent = '✓ Answer saved';
+      qAnsState.textContent = '✓ Answer evaluated';
       qAnsState.className = 'q-badge q-badge-status status-saved';
     }
     if (waveformWrap) waveformWrap.classList.add('hidden');
     if (liveTranscriptPanel) liveTranscriptPanel.classList.remove('is-recording');
+
+    if (chipLive) chipLive.className = 'iph-chip iph-chip-live is-evaluated';
+    if (chipLiveText) chipLiveText.textContent = 'EVALUATED';
+
   } else if (targetState === UI_STATES.ERROR) {
     if (stateErr) stateErr.classList.remove('hidden');
     if (asiText) asiText.textContent = 'Recording error';
     if (asiIcon) asiIcon.textContent = '⚠️';
     if (asiIndicator) asiIndicator.classList.remove('listening');
+    if (asiDot) asiDot.className = 'asi-live-dot';
     if (qAnsState) {
       qAnsState.textContent = '⚠️ Retry needed';
       qAnsState.className = 'q-badge q-badge-status status-error';
     }
     if (waveformWrap) waveformWrap.classList.add('hidden');
     if (liveTranscriptPanel) liveTranscriptPanel.classList.remove('is-recording');
+
+    if (chipLive) chipLive.className = 'iph-chip iph-chip-live';
+    if (chipLiveText) chipLiveText.textContent = 'ERROR';
   }
 }
-
 
 function resetCurrentQuestionState() {
   stopTimer();
@@ -2865,17 +2906,36 @@ function presentAudioRecordingForReview() {
 
   // Populate transcript editor with captured live speech recognition or guidance text
   currentDraftTranscript = liveInterimTranscript || currentDraftTranscript || '';
+
+  const validateSubmitBtn = () => {
+    const text = transEditor ? transEditor.value.trim() : '';
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    if (wordCountEl) wordCountEl.textContent = `${words} words`;
+
+    const isValid = text.length >= 5 && !isSubmittingRecording && !isProcessing;
+    const submitBtns = [
+      document.getElementById('btn-review-submit'),
+      document.getElementById('btn-ctrl-review-submit')
+    ];
+    submitBtns.forEach(btn => {
+      if (btn) {
+        btn.disabled = !isValid;
+        if (!isValid) {
+          btn.classList.add('btn-disabled');
+          btn.title = text.length < 5 ? 'Please provide an answer (min 5 characters) to submit' : 'Submission in progress...';
+        } else {
+          btn.classList.remove('btn-disabled');
+          btn.title = 'Submit answer for AI evaluation';
+        }
+      }
+    });
+  };
+
   if (transEditor) {
     transEditor.value = currentDraftTranscript;
-    transEditor.oninput = () => {
-      const words = transEditor.value.trim().split(/\s+/).filter(Boolean).length;
-      if (wordCountEl) wordCountEl.textContent = `${words} words`;
-    };
+    transEditor.oninput = validateSubmitBtn;
   }
-  if (wordCountEl) {
-    const words = (currentDraftTranscript || '').trim().split(/\s+/).filter(Boolean).length;
-    wordCountEl.textContent = `${words} words`;
-  }
+  validateSubmitBtn();
 
   // Populate telemetry pills
   const wpmBadge = document.getElementById('trc-badge-wpm');
@@ -3519,6 +3579,12 @@ function displayPerQuestionResultCard(answerObj) {
   if (reviewCard) reviewCard.classList.add('hidden');
   if (qResultCard) qResultCard.classList.remove('hidden');
 
+  // Populate Question Context Reference
+  const qrcQText = document.getElementById('qrc-question-text');
+  if (qrcQText) {
+    qrcQText.textContent = `"${answerObj.question || (questions[currentQuestionIndex] ? questions[currentQuestionIndex].question : '')}"`;
+  }
+
   // Populate Technical Score
   const scoreEl = document.getElementById('per-q-score');
   if (scoreEl) {
@@ -3633,6 +3699,13 @@ function displayPerQuestionResultCard(answerObj) {
     perQNextBtn.onclick = () => {
       goToNextQuestion();
     };
+  }
+
+  const nextDockBtn = document.getElementById('btn-next-question-action');
+  if (nextDockBtn) {
+    nextDockBtn.innerHTML = isFinalQuestion 
+      ? '<span>View Final Report →</span>' 
+      : `<span>Next Question (${currentQuestionIndex + 2} of ${questions.length}) →</span>`;
   }
 
   // Bind Re-record Answer Button
@@ -6413,7 +6486,7 @@ function displayParsedResumePreview(filename, parsed) {
   }
 
   if (statusBadge) {
-    statusBadge.innerHTML = '<span class="b-check">✓</span> AI <span class="b-check">✓</span> PERSONALIZED';
+    statusBadge.innerHTML = '<span class="b-check">✓</span> AI PERSONALIZED';
     statusBadge.className = 'badge-ai-personalized';
   }
 

@@ -53,8 +53,8 @@ def main():
 
         mid = 10
 
-        # TEST 1: Setup View Initialization & Sticky Action Bar Presence
-        print("\n[TEST 1] Testing Setup View Initialization & Sticky Action Bar...")
+        # TEST 1: Setup View Initialization & Unified Summary CTA Presence
+        print("\n[TEST 1] Testing Setup View Initialization & Unified Summary CTA...")
         mid += 1
         res = evaluate_js(ws, """
             (async () => {
@@ -72,27 +72,27 @@ def main():
                 navigateToView('interview-setup');
                 initInterviewSetupPage();
                 
-                const stickyBar = document.getElementById('setup-sticky-bottom-bar');
+                const floatingBar = document.getElementById('setup-sticky-bottom-bar');
                 const primaryBtn = document.getElementById('btn-continue-device-check');
-                const duplicateInSummary = document.querySelector('.summary-sticky-card #btn-continue-device-check');
-                const statusDot = document.getElementById('ssb-status-dot');
+                const btnInSummary = document.querySelector('.summary-sticky-card #btn-continue-device-check');
+                const allContinueBtns = document.querySelectorAll('#btn-continue-device-check, .btn-sticky-continue, .btn-summary-continue');
                 const statusText = document.getElementById('ssb-status-text');
                 
                 return {
                     setupActive: document.getElementById('view-interview-setup')?.classList.contains('active'),
-                    hasStickyBar: !!stickyBar,
-                    stickyBarVisible: stickyBar ? getComputedStyle(stickyBar).display !== 'none' : false,
+                    floatingBarRemoved: !floatingBar || getComputedStyle(floatingBar).display === 'none',
                     hasPrimaryBtn: !!primaryBtn,
+                    primaryBtnInSummary: !!btnInSummary,
+                    singlePrimaryBtn: allContinueBtns.length === 1,
                     primaryBtnEnabled: primaryBtn ? !primaryBtn.disabled : false,
-                    duplicateRemoved: duplicateInSummary === null,
                     statusText: statusText ? statusText.textContent.trim() : ''
                 };
             })()
         """, msg_id=mid)
         print("  Result:", res)
-        assert res["setupActive"] and res["hasStickyBar"] and res["stickyBarVisible"] and res["hasPrimaryBtn"] and res["duplicateRemoved"]
-        test_results["Test 1 (Setup Init & Single Sticky Action)"] = "PASS"
-        print("  -> PASS: Interview Setup active with single primary continue action in sticky bottom bar and zero duplicates.")
+        assert res["setupActive"] and res["floatingBarRemoved"] and res["hasPrimaryBtn"] and res["primaryBtnInSummary"] and res["singlePrimaryBtn"]
+        test_results["Test 1 (Setup Init & Unified Summary Action)"] = "PASS"
+        print("  -> PASS: Interview Setup active with single primary continue action inside summary sidebar, zero floating overlay.")
 
         # TEST 2: Real-time Selection Changes & Summary Synchronization
         print("\n[TEST 2] Testing Selection Changes & Real-time Live Synchronization...")
@@ -138,26 +138,20 @@ def main():
                     sumDiff: document.getElementById('sum-diff')?.textContent,
                     sumCount: document.getElementById('sum-count')?.textContent,
                     sumMode: document.getElementById('sum-mode')?.textContent,
-                    // Sticky bar values
-                    barRole: document.getElementById('ssb-chip-role')?.textContent,
-                    barExp: document.getElementById('ssb-chip-exp')?.textContent,
-                    barType: document.getElementById('ssb-chip-type')?.textContent,
-                    barDiff: document.getElementById('ssb-chip-diff')?.textContent,
-                    barCount: document.getElementById('ssb-chip-count')?.textContent,
                     barStatus: document.getElementById('ssb-status-text')?.textContent
                 };
             })()
         """, msg_id=mid)
         print("  Result:", res)
-        assert res["configRole"] == "Frontend Developer" and res["sumRole"] == "Frontend Developer" and res["barRole"] == "Frontend Developer"
-        assert res["configExp"] == "Senior" and res["sumExp"] == "Senior" and res["barExp"] == "Senior"
-        assert res["configType"] == "Technical Interview" and res["sumType"] == "Technical Interview" and res["barType"] == "Technical"
-        assert res["configDiff"] == "Hard" and res["sumDiff"] == "Hard" and res["barDiff"] == "Hard"
-        assert res["configCount"] == 10 and res["sumCount"] == "10 Questions" and "10" in res["barCount"]
+        assert res["configRole"] == "Frontend Developer" and res["sumRole"] == "Frontend Developer"
+        assert res["configExp"] == "Senior" and res["sumExp"] == "Senior"
+        assert res["configType"] == "Technical Interview" and res["sumType"] == "Technical Interview"
+        assert res["configDiff"] == "Hard" and res["sumDiff"] == "Hard"
+        assert res["configCount"] == 10 and res["sumCount"] == "10 Questions"
         assert res["configMode"] == "Audio Interview" and res["sumMode"] == "Audio Interview"
         assert res["barStatus"] == "Configuration Ready"
         test_results["Test 2 (Live Selection & Sync)"] = "PASS"
-        print("  -> PASS: All selections updated instantly in memory, in-card summary, and sticky bottom bar.")
+        print("  -> PASS: All selections updated instantly in memory and in-card summary.")
 
         # TEST 3: Validation & Disabled State Handling
         print("\n[TEST 3] Testing Validation & Required Field Handling...")

@@ -865,17 +865,24 @@
         <!-- QUESTION PROGRESS HEADER -->
         <header class="interview-progress-header" id="interview-progress-header">
           <div class="iph-left">
-            <button class="btn-back-link" id="btn-interview-back-questions" type="button" aria-label="Back to Questions">
+            <button class="btn-back-link" id="btn-interview-back-questions" type="button" aria-label="Exit to Setup" title="Exit interview and return to setup">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
               </svg>
-              <span>Back to Questions</span>
+              <span>Exit to Setup</span>
             </button>
+            <div class="iph-session-badge">
+              <span class="iph-dot-interviewer"></span>
+              <span class="iph-session-title">AI Technical Interview</span>
+            </div>
           </div>
 
           <div class="iph-center">
-            <span class="iph-counter-text" id="topbar-q-counter">Question 1 of 5</span>
+            <div class="iph-progress-meta">
+              <span class="iph-counter-text" id="topbar-q-counter">Question 1 of 5</span>
+              <span class="iph-track-chip-sm" id="itb-track-label">Technical Track</span>
+            </div>
             <div class="iph-progress-track">
               <div class="iph-progress-fill" id="topbar-progress-fill" style="width: 20%;"></div>
             </div>
@@ -887,12 +894,12 @@
               <span>Headphones Recommended</span>
             </span>
             <span class="iph-chip iph-chip-live" id="chip-live-status">
-              <span class="live-pulsing-dot"></span>
-              <span>LIVE</span>
+              <span class="live-pulsing-dot" id="live-pulsing-dot"></span>
+              <span id="live-chip-text">READY</span>
             </span>
-            <div class="iph-chip iph-chip-timer">
+            <div class="iph-chip iph-chip-timer" title="Session Elapsed Time">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              <span id="topbar-session-timer">00:37</span>
+              <span id="topbar-session-timer">00:00</span>
             </div>
           </div>
         </header>
@@ -1047,6 +1054,11 @@
               </div>
 
               <div class="qrc-body">
+                <div class="qrc-question-context">
+                  <span class="qrc-qc-label">QUESTION PROMPT</span>
+                  <p class="qrc-qc-text" id="qrc-question-text">"..."</p>
+                </div>
+
                 <div class="qrc-section">
                   <span class="qrc-sec-title">Final Submitted Answer</span>
                   <div class="qrc-transcript-scroll" id="per-q-transcript-box">
@@ -1241,6 +1253,10 @@
             </div>
 
             <div class="action-btn-group hidden" id="ctrl-state-saved">
+              <button class="btn btn-secondary btn-dock-action" id="btn-ctrl-saved-rerecord" type="button">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <span>Re-record</span>
+              </button>
               <button class="btn-gradient-start-answer" id="btn-next-question-action" type="button">
                 <span>Next Question →</span>
               </button>
@@ -3267,21 +3283,27 @@
                 </div>
 
                 <!-- Detected Skills Tag Cloud -->
-                <div class="setup-skills-chips-wrapper" id="prp-skills-chips">
-                  <span class="skill-tag-chip">PYTHON</span>
-                  <span class="skill-tag-chip">JAVASCRIPT</span>
-                  <span class="skill-tag-chip">JAVA</span>
-                  <span class="skill-tag-chip">C#</span>
-                  <span class="skill-tag-chip">PHP</span>
-                  <span class="skill-tag-chip">HTML</span>
-                  <span class="skill-tag-chip">CSS</span>
-                  <span class="skill-tag-chip">DJANGO</span>
-                  <span class="skill-tag-chip">LARAVEL</span>
-                  <span class="skill-tag-chip">BOOTSTRAP</span>
-                  <span class="skill-tag-chip">MYSQL</span>
-                  <span class="skill-tag-chip">ORACLE</span>
-                  <span class="skill-tag-chip">GITHUB</span>
-                  <span class="skill-tag-chip">VS CODE</span>
+                <div class="setup-skills-section">
+                  <div class="setup-skills-header-row">
+                    <span class="ssh-label">Extracted Technical Stack</span>
+                    <span class="ssh-badge">AI Analyzed</span>
+                  </div>
+                  <div class="setup-skills-chips-wrapper" id="prp-skills-chips">
+                    <span class="skill-tag-chip">PYTHON</span>
+                    <span class="skill-tag-chip">JAVASCRIPT</span>
+                    <span class="skill-tag-chip">JAVA</span>
+                    <span class="skill-tag-chip">C#</span>
+                    <span class="skill-tag-chip">PHP</span>
+                    <span class="skill-tag-chip">HTML</span>
+                    <span class="skill-tag-chip">CSS</span>
+                    <span class="skill-tag-chip">DJANGO</span>
+                    <span class="skill-tag-chip">LARAVEL</span>
+                    <span class="skill-tag-chip">BOOTSTRAP</span>
+                    <span class="skill-tag-chip">MYSQL</span>
+                    <span class="skill-tag-chip">ORACLE</span>
+                    <span class="skill-tag-chip">GITHUB</span>
+                    <span class="skill-tag-chip">VS CODE</span>
+                  </div>
                 </div>
 
                 <!-- Featured Projects Row -->
@@ -3712,7 +3734,22 @@
                   </div>
                 </div>
 
-                <!-- NOTE: Duplicate Continue button intentionally removed per Phase 1. The single primary action is located in the persistent bottom sticky action bar. -->
+                <!-- LIVE CONFIGURATION STATUS & SINGLE PRIMARY CONTINUE ACTION -->
+                <div class="ssc-action-footer">
+                  <div class="summary-status-badge ready" id="summary-status-badge">
+                    <span class="ssb-pulse-dot" id="ssb-status-dot"></span>
+                    <span class="ssb-status-text" id="ssb-status-text">Configuration Ready</span>
+                  </div>
+
+                  <button type="button" class="btn btn-primary btn-summary-continue" id="btn-continue-device-check">
+                    <span>Continue to Device Check</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
+                  <p class="ssc-action-note">Verify camera &amp; audio before starting</p>
+                </div>
               </div>
             </div>
           </aside>
@@ -3754,34 +3791,6 @@
           </div>
         </footer>
 
-      </div>
-
-      <!-- PERSISTENT SLIM FLOATING STICKY BOTTOM ACTION BAR (ZERO DUPLICATES) -->
-      <div class="setup-sticky-bottom-bar" id="setup-sticky-bottom-bar" aria-label="Interview Configuration Actions">
-        <div class="setup-sticky-bar-container">
-          <div class="ssb-status-group">
-            <div class="ssb-indicator-badge">
-              <span class="ssb-pulse-dot" id="ssb-status-dot"></span>
-              <span class="ssb-status-text" id="ssb-status-text">Configuration Ready</span>
-            </div>
-            <div class="ssb-pills-row" id="ssb-quick-chips">
-              <span class="ssb-chip" id="ssb-chip-role">Backend Developer</span>
-              <span class="ssb-chip-sep">•</span>
-              <span class="ssb-chip" id="ssb-chip-exp">Mid Level</span>
-              <span class="ssb-chip-sep">•</span>
-              <span class="ssb-chip" id="ssb-chip-type">Mixed</span>
-              <span class="ssb-chip-sep">•</span>
-              <span class="ssb-chip" id="ssb-chip-diff">Medium</span>
-              <span class="ssb-chip-sep">•</span>
-              <span class="ssb-chip" id="ssb-chip-count">5 Questions</span>
-            </div>
-          </div>
-          <div class="ssb-actions-group">
-            <button type="button" class="btn btn-primary btn-lg btn-sticky-continue" id="btn-continue-device-check">
-              <span>Continue to Device Check →</span>
-            </button>
-          </div>
-        </div>
       </div>
 
     </div>
