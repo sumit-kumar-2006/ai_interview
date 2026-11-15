@@ -615,7 +615,7 @@ p {
 .main-container {
   width: 100%;
   margin: 0 auto;
-  padding: 92px 0 48px;
+  padding: 72px 0 24px;
 }
 
 .view-panel {
@@ -624,6 +624,43 @@ p {
 
 .view-panel.active {
   display: block !important;
+}
+
+#view-practice.active {
+  display: flex !important;
+}
+
+#view-results.active {
+  display: block !important;
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  overflow-y: auto !important;
+}
+
+.results-page-wrapper {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 20px 32px;
+}
+
+body.in-interview #global-app-footer {
+  display: none !important;
+}
+
+/* Ensure interview bottomdock is only visible when live interview is active and in progress */
+.interview-bottombar {
+  display: none !important;
+}
+#view-practice.active .interview-bottombar {
+  display: flex !important;
+}
+
+/* Ensure setup sticky bottombar is strictly scoped to interview-setup */
+.setup-sticky-bottom-bar {
+  display: none !important;
+}
+#view-interview-setup.active .setup-sticky-bottom-bar {
+  display: flex !important;
 }
 
 .btn {
@@ -1215,7 +1252,7 @@ p {
    7. HOW IT WORKS SECTION (3 LARGE STEP CARDS)
    -------------------------------------------------------------------------- */
 .landing-section-block {
-  margin-bottom: 96px;
+  margin-bottom: 44px;
 }
 
 .section-center-header {
@@ -1814,7 +1851,7 @@ p {
 }
 
 .landing-integrated-footer {
-  margin-top: 80px;
+  margin-top: 40px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
@@ -2306,8 +2343,7 @@ p {
   max-width: 440px !important;
 }
 
-body.in-interview .toast-container,
-body:has(#view-practice.active:not(.session-completed)) .toast-container {
+body.in-interview .toast-container {
   bottom: 84px !important;
   right: 28px !important;
 }
@@ -2413,8 +2449,8 @@ body:has(#view-practice.active:not(.session-completed)) .toast-container {
 .dashboard-wrapper {
   width: min(1200px, calc(100% - 48px));
   margin-inline: auto;
-  padding-top: 20px;
-  padding-bottom: 60px;
+  padding-top: 8px;
+  padding-bottom: 28px;
 }
 
 /* 1. DASHBOARD HEADER & WELCOME CARD */
@@ -2876,9 +2912,14 @@ body:has(#view-practice.active:not(.session-completed)) .toast-container {
 /* 3. MAIN DASHBOARD CONTENT GRID (PERFORMANCE + FOCUS AREAS) */
 .dash-main-grid {
   display: grid;
-  grid-template-columns: 1fr 395px;
+  grid-template-columns: minmax(0, 1fr) 395px;
   gap: 24px;
   margin-bottom: 26px;
+}
+
+.dash-col-primary {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .dash-card-panel {
@@ -2888,6 +2929,8 @@ body:has(#view-practice.active:not(.session-completed)) .toast-container {
   padding: 28px 30px;
   box-shadow: 0 4px 18px rgba(16, 27, 85, 0.03);
   position: relative;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .dash-card-perf {
@@ -3188,7 +3231,10 @@ body:has(#view-practice.active:not(.session-completed)) .toast-container {
 }
 
 .table-responsive-wrap {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dash-table {
@@ -3533,7 +3579,7 @@ body:has(#view-practice.active:not(.session-completed)) .toast-container {
 /* RESPONSIVE DESIGN FOR DASHBOARD */
 @media (max-width: 1024px) {
   .dash-main-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   
   .dashboard-header-card {
@@ -3640,8 +3686,8 @@ body:has(#view-practice.active:not(.session-completed)) .toast-container {
   z-index: 1;
   width: min(1240px, calc(100% - 48px));
   margin-inline: auto;
-  padding-top: 24px;
-  padding-bottom: 60px;
+  padding-top: 10px;
+  padding-bottom: 24px;
 }
 
 /* Two-Column Hero Header with 3D Laptop Interviewer */
@@ -4568,8 +4614,8 @@ body:has(#view-practice.active:not(.session-completed)) .toast-container {
 .device-check-wrapper {
   width: min(1200px, calc(100% - 40px));
   margin-inline: auto;
-  padding-top: 18px;
-  padding-bottom: 48px;
+  padding-top: 8px;
+  padding-bottom: 24px;
   position: relative;
   z-index: 2;
 }
@@ -5593,34 +5639,34 @@ html[data-theme="dark"] .ready-mint-banner.ready .rmb-content p {
 }
 
 /* --------------------------------------------------------------------------
-/* --------------------------------------------------------------------------
    11. LIVE INTERVIEW ROOM — PIXEL-PERFECT SAAS THEME (EXACT REFERENCE DESIGN)
    -------------------------------------------------------------------------- */
 
-/* Preserve floating navbar visibility in live interview */
+/* Hide global header/nav/footer strictly during active live interview */
+body.in-interview .navbar,
 body.in-interview .site-header,
 body.in-interview .site-footer,
-body.in-interview .app-footer,
-body:has(#view-practice.active:not(.session-completed)) .site-header,
-body:has(#view-practice.active:not(.session-completed)) .site-footer {
+body.in-interview .app-footer {
   display: none !important;
 }
 
-body.in-interview .navbar,
-body:has(#view-practice.active:not(.session-completed)) .navbar {
-  display: flex !important;
-  position: relative !important;
-  z-index: 50 !important;
+body.in-interview {
+  overflow: hidden !important;
+  height: 100vh !important;
+  height: 100dvh !important;
 }
 
-body.in-interview .main-container,
-body:has(#view-practice.active:not(.session-completed)) .main-container {
+body.in-interview .main-container {
   padding: 0 !important;
   margin: 0 !important;
   max-width: 100vw !important;
   width: 100vw !important;
-  min-height: calc(100vh - 72px) !important;
-  background: #F5F7FF !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  background: #F8FAFC !important;
+  overflow: hidden !important;
 }
 
 #view-practice {
@@ -5629,30 +5675,16 @@ body:has(#view-practice.active:not(.session-completed)) .main-container {
 
 #view-practice.active {
   display: flex !important;
-  min-height: calc(100vh - 72px);
-  width: 100vw;
-  background: #F5F7FF;
-  flex-direction: column;
   position: relative;
-  overflow-x: hidden;
-  padding-bottom: 24px;
-}
-
-#view-practice.active.session-completed,
-#view-practice.session-completed,
-#view-practice:has(#completion-card:not(.hidden)) {
-  min-height: 100vh !important;
-  overflow-y: auto !important;
-  background: #F5F7FF !important;
-}
-
-#view-practice.session-completed .interview-progress-header,
-#view-practice:has(#completion-card:not(.hidden)) .interview-progress-header,
-#view-practice.session-completed .interview-bottombar,
-#view-practice:has(#completion-card:not(.hidden)) .interview-bottombar,
-#view-practice.session-completed .interview-main-stage,
-#view-practice:has(#completion-card:not(.hidden)) .interview-main-stage {
-  display: none !important;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  background: #F8FAFC;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Atmospheric Ambient Lighting Accents */
@@ -5679,55 +5711,6 @@ body:has(#view-practice.active:not(.session-completed)) .main-container {
   width: 520px;
   height: 520px;
   background: radial-gradient(circle, rgba(121, 47, 255, 0.12) 0%, rgba(18, 184, 240, 0.08) 50%, transparent 80%);
-}
-
-/* --------------------------------------------------------------------------
-   11. LIVE INTERVIEW WORKSPACE — MODERN SWISS TECH THEME
-   Strict Viewport Containment, Balanced Two-Column Stage & Sticky Bottom Dock
-   -------------------------------------------------------------------------- */
-
-/* Hide global header/nav/footer during active interview */
-body.in-interview .navbar,
-body:has(#view-practice.active:not(.session-completed)) .navbar,
-body.in-interview .site-header,
-body:has(#view-practice.active:not(.session-completed)) .site-header,
-body.in-interview .site-footer,
-body:has(#view-practice.active:not(.session-completed)) .site-footer,
-body.in-interview .app-footer {
-  display: none !important;
-}
-
-body.in-interview,
-body:has(#view-practice.active:not(.session-completed)) {
-  overflow: hidden !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-}
-
-body.in-interview .main-container,
-body:has(#view-practice.active:not(.session-completed)) .main-container {
-  padding: 0 !important;
-  margin: 0 !important;
-  max-width: 100vw !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  min-height: 100vh !important;
-  min-height: 100dvh !important;
-  background: #F8FAFC !important;
-  overflow: hidden !important;
-}
-
-#view-practice {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  max-height: 100vh;
-  max-height: 100dvh;
-  background: #F8FAFC;
-  overflow: hidden;
-  box-sizing: border-box;
 }
 
 .interview-workspace-wrapper {
@@ -7111,6 +7094,9 @@ body:has(#view-practice.active:not(.session-completed)) .main-container {
 }
 
 @media (max-width: 640px) {
+  .interview-workspace-wrapper {
+    padding: 8px 10px 110px !important;
+  }
   .interview-progress-header {
     height: auto !important;
     padding: 10px 12px !important;
@@ -7146,6 +7132,175 @@ body:has(#view-practice.active:not(.session-completed)) .main-container {
     align-items: flex-start !important;
   }
 }
+
+
+/* Adaptive Review State Compactness: Hide decorative illustration & shrink question prompt so review form fits 100% without scroll */
+#view-practice:has(#transcript-review-card:not(.hidden)) .question-card {
+  padding: 12px 18px !important;
+  gap: 6px !important;
+  box-shadow: 0 2px 10px rgba(16, 27, 85, 0.03) !important;
+}
+
+#view-practice:has(#transcript-review-card:not(.hidden)) .question-body-row {
+  margin-bottom: 0 !important;
+}
+
+#view-practice:has(#transcript-review-card:not(.hidden)) .question-3d-visual-wrap {
+  display: none !important;
+}
+
+#view-practice:has(#transcript-review-card:not(.hidden)) .question-title-text {
+  font-size: 1.12rem !important;
+  line-height: 1.35 !important;
+}
+
+#view-practice:has(#transcript-review-card:not(.hidden)) .question-subhint {
+  display: none !important;
+}
+
+#view-practice:has(#transcript-review-card:not(.hidden)) .question-footer-badges {
+  margin-top: 4px !important;
+}
+
+/* Custom Sleek Scrollbars for Inner Containers */
+.ltp-scroll-box::-webkit-scrollbar,
+.qrc-transcript-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.ltp-scroll-box::-webkit-scrollbar-track,
+.qrc-transcript-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ltp-scroll-box::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+}
+.qrc-transcript-scroll::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 999px;
+}
+
+/* Header & Control Responsiveness between 960px and 1200px (1024px Laptop/iPad) */
+@media (max-width: 1200px) {
+  .iph-session-badge {
+    display: none !important;
+  }
+  .iph-track-chip-sm {
+    display: none !important;
+  }
+  .iph-chip-headphones span {
+    display: none !important;
+  }
+  .cam-select-input-sm {
+    max-width: 130px !important;
+  }
+}
+
+/* Low Viewport Height Optimization (<= 800px such as 1366x768 and 1024x768) */
+@media (max-height: 800px) and (min-width: 961px) {
+  .interview-workspace-wrapper {
+    padding: 6px 0 !important;
+    gap: 6px !important;
+  }
+  .interview-progress-header {
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 12px !important;
+  }
+  .interview-bottombar {
+    height: 52px !important;
+    min-height: 52px !important;
+    padding: 0 16px !important;
+  }
+  .question-card {
+    padding: 14px 18px !important;
+    gap: 8px !important;
+  }
+  .question-title-text {
+    font-size: 1.2rem !important;
+  }
+  .question-3d-visual-wrap {
+    width: 54px !important;
+    height: 54px !important;
+  }
+  .question-3d-bubble-img {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  .live-transcript-panel {
+    padding: 10px 14px !important;
+  }
+  .ltp-scroll-box {
+    max-height: 48px !important;
+  }
+  .transcript-review-card {
+    padding: 14px 18px !important;
+    gap: 8px !important;
+  }
+  .trc-textarea {
+    min-height: 70px !important;
+    max-height: 110px !important;
+  }
+  .trc-prompt-bar {
+    padding: 6px 10px !important;
+    font-size: 0.78rem !important;
+  }
+  .question-complete-card {
+    padding: 14px 18px !important;
+    gap: 10px !important;
+  }
+}
+
+/* Tablet Portrait (768px - 960px) */
+@media (min-width: 641px) and (max-width: 960px) {
+  .interview-progress-header {
+    height: 46px !important;
+    padding: 0 12px !important;
+  }
+  .iph-session-badge {
+    display: none !important;
+  }
+  .iph-track-chip-sm {
+    display: none !important;
+  }
+  .iph-chip-headphones span {
+    display: none !important;
+  }
+  .interview-cam-col {
+    height: 280px !important;
+  }
+  .interview-bottombar {
+    height: 56px !important;
+    padding: 0 16px !important;
+  }
+}
+
+/* Mobile Devices (<= 640px) */
+@media (max-width: 640px) {
+  .iph-session-badge {
+    display: none !important;
+  }
+  .iph-chip-headphones {
+    display: none !important;
+  }
+  .btn-back-link span {
+    display: none !important;
+  }
+  .interview-cam-col {
+    height: 190px !important;
+  }
+  .interview-bottombar {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
+  .atb-label {
+    display: none !important;
+  }
+  .answer-timer-box {
+    align-items: center !important;
+  }
+}
+
 
 /* --------------------------------------------------------------------------
    12. POST-INTERVIEW COMPREHENSIVE REPORT STYLES (LIGHT SAAS THEME)
@@ -8941,7 +9096,7 @@ body::before {
 
 /* 3. HERO SECTION (LINEAR / AWWWARDS STYLE) */
 .landing-hero-section {
-  padding: 64px 24px 84px !important;
+  padding: 24px 24px 32px !important;
   max-width: 1240px !important;
   margin: 0 auto !important;
 }
@@ -9660,9 +9815,9 @@ textarea:focus-visible {
 
 /* 2. Authenticated Header Navigation */
 .auth-nav-links {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .nav-btn-link {
@@ -10254,7 +10409,7 @@ body {
 /* 5. Section 4: How It Works */
 .landing-section-block {
   max-width: 1200px;
-  margin: 64px auto;
+  margin: 36px auto;
   padding: 0 20px;
 }
 
@@ -11455,8 +11610,28 @@ body {
     padding: 4px 8px !important;
     gap: 4px !important;
   }
+  .auth-nav-links,
+  #auth-nav {
+    display: none !important;
+  }
   .nav-actions {
     gap: 6px !important;
+  }
+  .user-greeting-chip {
+    max-width: 140px;
+    padding: 3px 6px;
+    font-size: 11.5px;
+  }
+  #nav-user-chip-name {
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .btn-nav-logout {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
   }
   .unauth-nav-actions {
     gap: 4px !important;
@@ -11502,7 +11677,7 @@ body {
   width: 100%;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 18px 20px 60px;
+  padding: 10px 20px 32px;
   min-height: calc(100vh - 80px);
   overflow-x: clip;
 }
@@ -13283,7 +13458,7 @@ body {
   width: 100%;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 18px 20px 60px;
+  padding: 10px 20px 32px;
   min-height: calc(100vh - 80px);
   overflow-x: clip;
 }
@@ -13591,6 +13766,124 @@ body {
   .profile-form-actions {
     flex-direction: column;
   }
+}
+
+/* Phase 7 UI/UX Enhancements: Profile & Analytics */
+.btn-avatar-edit-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #1677FF;
+  color: #FFFFFF;
+  border: 2px solid #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  padding: 0;
+}
+.btn-avatar-edit-overlay:hover {
+  background: #0958D9;
+  transform: scale(1.1);
+}
+
+.profile-parsing-banner {
+  margin-bottom: 14px;
+}
+.profile-parsing-banner .banner-loading {
+  background: rgba(22, 119, 255, 0.08);
+  border: 1px solid rgba(22, 119, 255, 0.25);
+  color: #1677FF;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.profile-parsing-banner .banner-success {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #065F46;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.profile-parsing-banner .banner-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #991B1B;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-pill-language {
+  background: rgba(22, 119, 255, 0.1) !important;
+  border: 1px solid rgba(22, 119, 255, 0.35) !important;
+  color: #0958D9 !important;
+  font-weight: 600;
+}
+.tag-pill-skill {
+  background: rgba(124, 58, 237, 0.09) !important;
+  border: 1px solid rgba(124, 58, 237, 0.3) !important;
+  color: #6D28D9 !important;
+  font-weight: 600;
+}
+
+.reports-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 16px;
+  text-align: center;
+  background: #F8FAFC;
+  border-radius: 12px;
+  border: 1px dashed #CBD5E1;
+  color: #64748B;
+  gap: 8px;
+}
+.reports-empty-box p {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.empty-insights-box {
+  padding: 18px 16px;
+  text-align: center;
+  color: #64748B;
+  font-size: 0.8125rem;
+  background: #F8FAFC;
+  border: 1px dashed #E2E8F0;
+  border-radius: 10px;
+}
+
+.pill-trophy.pill-neutral {
+  background: rgba(100, 116, 139, 0.12) !important;
+  color: #475569 !important;
+  border-color: rgba(100, 116, 139, 0.25) !important;
+}
+
+.ph-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 
@@ -14813,4 +15106,459 @@ body {
   .setup-mode-grid-horizontal {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* ==========================================================================
+   ENHANCED INTERVIEW PROCESS LOADING & ROOM INITIALIZATION STYLES
+   ========================================================================== */
+
+/* Pre-Interview Room Initialization Overlay */
+.interview-init-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 20px;
+  opacity: 1;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.interview-init-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.init-modal-card {
+  width: 100%;
+  max-width: 520px;
+  background: linear-gradient(145deg, #1E293B 0%, #0F172A 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 40px rgba(99, 102, 241, 0.15);
+  text-align: center;
+  color: #F8FAFC;
+}
+
+.init-spinner-orbit {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px auto;
+  border-radius: 50%;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #6366F1;
+  border-right-color: #8B5CF6;
+  animation: spinOrbit 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-core {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.8);
+}
+
+@keyframes spinOrbit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.init-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.init-subtitle {
+  font-size: 0.92rem;
+  color: #94A3B8;
+  margin-bottom: 24px;
+}
+
+.init-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.init-check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s ease;
+}
+
+.init-check-item.done {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.init-check-item.error {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.init-icon-status {
+  font-size: 1.15rem;
+  min-width: 24px;
+  text-align: center;
+}
+
+.init-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #E2E8F0;
+  flex: 1;
+}
+
+/* In-Stage AI Evaluation Loading Card */
+.interview-eval-loading-card {
+  padding: 32px 28px;
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.4), 0 0 35px rgba(99, 102, 241, 0.12);
+  margin-bottom: 24px;
+  text-align: center;
+  animation: fadeInCard 0.35s ease-out;
+}
+
+@keyframes fadeInCard {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.iel-header {
+  margin-bottom: 24px;
+}
+
+.iel-badge-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.iel-pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6366F1;
+  box-shadow: 0 0 10px #6366F1;
+  animation: pulseDot 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.iel-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.iel-subtitle {
+  font-size: 0.92rem;
+  color: #94A3B8;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.iel-animation-stage {
+  margin: 24px auto 20px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iel-scanner-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #6366F1;
+  border-bottom-color: #8B5CF6;
+  animation: spinOrbit 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.iel-core-orb {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+  animation: orbPulse 1.8s infinite alternate;
+}
+
+@keyframes orbPulse {
+  0% { transform: scale(0.92); }
+  100% { transform: scale(1.08); }
+}
+
+.iel-progress-track {
+  width: 100%;
+  max-width: 520px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  margin: 0 auto 24px auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.iel-progress-fill {
+  height: 100%;
+  width: 25%;
+  background: linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899);
+  background-size: 200% 100%;
+  border-radius: 999px;
+  transition: width 0.45s ease;
+  animation: gradientSlide 2s linear infinite;
+}
+
+@keyframes gradientSlide {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.iel-steps-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 auto 20px auto;
+  text-align: left;
+}
+
+.iel-step-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.iel-step-item.active {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+}
+
+.iel-step-item.done {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.iel-step-icon {
+  font-size: 1.25rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iel-step-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.iel-step-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.iel-step-desc {
+  font-size: 0.8rem;
+  color: #94A3B8;
+}
+
+.iel-step-status {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #94A3B8;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.iel-step-item.active .iel-step-status {
+  color: #6366F1;
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.iel-step-item.done .iel-step-status {
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.iel-footer-status {
+  margin-top: 16px;
+}
+
+.iel-status-pill {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #E2E8F0;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 6px 16px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+/* Interview Full Session Completion Overlay */
+.interview-completion-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 20px;
+  opacity: 1;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.interview-completion-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ico-modal-card {
+  width: 100%;
+  max-width: 500px;
+  background: linear-gradient(145deg, #1E293B 0%, #0F172A 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 24px;
+  padding: 40px 32px;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.7), 0 0 50px rgba(99, 102, 241, 0.2);
+  text-align: center;
+  color: #F8FAFC;
+}
+
+.ico-spinner-ring {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 24px auto;
+  border-radius: 50%;
+  border: 4px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #6366F1;
+  border-right-color: #10B981;
+  animation: spinOrbit 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ico-core-icon {
+  font-size: 2rem;
+  animation: bounceCore 1.5s infinite ease-in-out;
+}
+
+@keyframes bounceCore {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.ico-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+}
+
+.ico-subtitle {
+  font-size: 0.95rem;
+  color: #94A3B8;
+  margin-bottom: 28px;
+}
+
+.ico-progress-bar-wrap {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.ico-progress-bar-fill {
+  height: 100%;
+  width: 15%;
+  background: linear-gradient(90deg, #6366F1, #8B5CF6, #10B981);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.ico-status-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #CBD5E1;
+}
+
+/* Bottom bar processing state inline widget */
+#ctrl-state-processing .processing-inline-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 12px;
+}
+
+#ctrl-state-processing .pib-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  display: block;
+}
+
+#ctrl-state-processing .pib-sub {
+  font-size: 0.8rem;
+  color: #94A3B8;
+  display: block;
 }

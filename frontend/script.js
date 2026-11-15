@@ -109,8 +109,8 @@ const UI_STATES = {
 };
 
 const API_BASE_URL = (window.location.port === '8000') 
-  ? window.location.origin.replace(/\/$/, '')
-  : (window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'http://127.0.0.1:8000');
+  ? `${window.location.origin.replace(/\/$/, '')}/api`
+  : (window.location.hostname === 'localhost' ? 'http://localhost:8000/api' : 'http://127.0.0.1:8000/api');
 const STORAGE_KEY_HISTORY = 'ai_interview_history';
 const STORAGE_KEY_THEME = 'ai_interview_theme';
 const STORAGE_KEY_TOKEN = 'ai_interview_token';
@@ -491,10 +491,57 @@ function processMediaPipeLandmarks(results) {
     visualSession.headOrientationCounts[poseKey] = (visualSession.headOrientationCounts[poseKey] || 0) + 1;
   }
 
-  // 2. Camera Attention / Gaze Analysis
-  let attentionStr = 'LOOKING AT CAMERA';
-  if (headPose === 'CENTER') {
-    attentionStr = 'LOOKING AT CAMERA';
+  // 2. 3D Iris Landmark Gaze & Eye Contact Tracking
+  let isEyeContact = false;
+  let gazeDirection = 'CENTER';
+
+  // Check if refined iris landmarks are available (468 = Left Iris, 473 = Right Iris)
+  if (landmarks[468] && landmarks[473]) {
+    const leftIris = landmarks[468];
+    const rightIris = landmarks[473];
+
+    // Left Eye horizontal bounds (33 = outer, 133 = inner)
+    const leftEyeMinX = Math.min(landmarks[33].x, landmarks[133].x);
+    const leftEyeWidth = Math.abs(landmarks[33].x - landmarks[133].x);
+    const leftIrisRatio = leftEyeWidth > 0 ? (leftIris.x - leftEyeMinX) / leftEyeWidth : 0.5;
+
+    // Right Eye horizontal bounds (362 = inner, 263 = outer)
+    const rightEyeMinX = Math.min(landmarks[362].x, landmarks[263].x);
+    const rightEyeWidth = Math.abs(landmarks[263].x - landmarks[362].x);
+    const rightIrisRatio = rightEyeWidth > 0 ? (rightIris.x - rightEyeMinX) / rightEyeWidth : 0.5;
+
+    const avgIrisRatio = (leftIrisRatio + rightIrisRatio) / 2.0;
+
+    // Blink detection (EAR: Eye Aspect Ratio) to prevent false alerts during blinks
+    const leftEyeHeight = Math.hypot(landmarks[159].x - landmarks[145].x, landmarks[159].y - landmarks[145].y);
+    const rightEyeHeight = Math.hypot(landmarks[386].x - landmarks[374].x, landmarks[386].y - landmarks[374].y);
+    const ear = ((leftEyeHeight / Math.max(0.001, leftEyeWidth)) + (rightEyeHeight / Math.max(0.001, rightEyeWidth))) / 2.0;
+    const isBlinking = ear < 0.16;
+
+    // Iris centered within natural eye socket [0.38, 0.62]
+    const isIrisCentered = (avgIrisRatio >= 0.38 && avgIrisRatio <= 0.62);
+
+    if (headPose === 'CENTER' && (isIrisCentered || isBlinking)) {
+      isEyeContact = true;
+      gazeDirection = 'CENTER';
+    } else {
+      isEyeContact = false;
+      if (headPose !== 'CENTER') {
+        gazeDirection = headPose;
+      } else if (avgIrisRatio < 0.38) {
+        gazeDirection = 'LEFT';
+      } else if (avgIrisRatio > 0.62) {
+        gazeDirection = 'RIGHT';
+      }
+    }
+  } else {
+    // Fallback if iris landmarks unavailable
+    isEyeContact = (headPose === 'CENTER');
+  }
+
+  let attentionStr = isEyeContact ? 'LOOKING AT CAMERA' : 'LOOKING AWAY';
+
+  if (isEyeContact) {
     consecutiveLookingAwayFrames = 0;
     // Clear alert banner if user is looking at camera and face is present
     if (alertBanner && alertMsg && alertMsg.textContent.includes('camera') && consecutiveMissingFrames === 0) {
@@ -502,7 +549,6 @@ function processMediaPipeLandmarks(results) {
     }
     if (isRecordingAudio) visualSession.lookingAtCameraSamples++;
   } else {
-    attentionStr = 'LOOKING AWAY';
     consecutiveLookingAwayFrames++;
     if (isRecordingAudio && previousAttentionState === 'LOOKING AT CAMERA') {
       visualSession.lookingAwaySamples++;
@@ -1414,9 +1460,77 @@ function initTheme() {
   }
 }
 
-function initNavigation() {
-  const navLinks = document.querySelectorAll('.nav-link');
+// ==========================================================================
+// CANONICAL ROUTE RESOLUTION & ROUTER MAPPINGS
+// ==========================================================================
 
+const CANONICAL_VIEW_MAP = {
+  '/': 'landing',
+  'landing': 'landing',
+  'home': 'landing',
+
+  '/dashboard': 'dashboard',
+  'dashboard': 'dashboard',
+
+  '/start-interview': 'interview-setup',
+  'start-interview': 'interview-setup',
+  'interview-setup': 'interview-setup',
+  'setup': 'interview-setup',
+
+  '/device-check': 'device-check',
+  'device-check': 'device-check',
+
+  '/interview': 'practice',
+  'interview': 'practice',
+  'practice': 'practice',
+
+  '/results': 'results',
+  'results': 'results',
+  'result': 'results',
+  '/result': 'results',
+
+  '/profile': 'profile',
+  'profile': 'profile',
+
+  '/analytics': 'analytics',
+  'analytics': 'analytics',
+
+  '/reports': 'history',
+  'reports': 'history',
+  'history': 'history',
+  'report': 'history',
+
+  '/admin': 'admin',
+  'admin': 'admin'
+};
+
+const VIEW_TO_PATH_MAP = {
+  'landing': '/',
+  'dashboard': '/dashboard',
+  'interview-setup': '/start-interview',
+  'device-check': '/device-check',
+  'practice': '/interview',
+  'results': '/results',
+  'profile': '/profile',
+  'analytics': '/analytics',
+  'history': '/reports',
+  'admin': '/admin'
+};
+
+function resolveCanonicalView(viewOrPath) {
+  if (!viewOrPath) return 'landing';
+  let clean = String(viewOrPath).trim().toLowerCase();
+  if (clean.length > 1 && clean.endsWith('/')) {
+    clean = clean.slice(0, -1);
+  }
+  return CANONICAL_VIEW_MAP[clean] || CANONICAL_VIEW_MAP['/' + clean] || 'landing';
+}
+
+function initNavigation() {
+  const brandHome = document.getElementById('brand-home-link');
+  if (brandHome) brandHome.onclick = () => navigateToView('landing');
+
+  const navLinks = document.querySelectorAll('.nav-link');
   navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1460,10 +1574,24 @@ function initNavigation() {
 
   // Handle browser back/forward buttons
   window.addEventListener('popstate', (e) => {
+    const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     const urlParams = new URLSearchParams(window.location.search);
-    const viewParam = urlParams.get('view') || (e.state && e.state.view) || 'landing';
-    navigateToView(viewParam, false);
+    const viewParam = urlParams.get('view');
+    const target = (e.state && e.state.view) || CANONICAL_VIEW_MAP[currentPath] || (viewParam ? CANONICAL_VIEW_MAP[viewParam] : null) || 'landing';
+    navigateToView(target, false);
   });
+
+  // Initial Route Check on Load
+  const initialPath = window.location.pathname.replace(/\/$/, '') || '/';
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQueryView = urlParams.get('view');
+  const detectedInitial = (initialPath !== '/' && CANONICAL_VIEW_MAP[initialPath])
+    ? CANONICAL_VIEW_MAP[initialPath]
+    : (initialQueryView ? CANONICAL_VIEW_MAP[initialQueryView] : null);
+
+  if (detectedInitial && detectedInitial !== 'landing') {
+    navigateToView(detectedInitial, false);
+  }
 
   // Handle in-page anchors smoothly across views
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -1549,37 +1677,44 @@ async function checkBackendHealth() {
 // ==========================================================================
 
 function navigateToView(viewName, pushState = true) {
+  let resolvedView = resolveCanonicalView(viewName);
+
   // Protected Routes Check
-  const protectedViews = ['dashboard', 'practice', 'history', 'report', 'interview-setup', 'device-check', 'profile', 'analytics', 'admin'];
-  if (protectedViews.includes(viewName) && !authToken) {
-    intendedViewAfterLogin = viewName;
+  const protectedViews = ['dashboard', 'practice', 'history', 'report', 'interview-setup', 'device-check', 'profile', 'analytics', 'admin', 'results'];
+  if (protectedViews.includes(resolvedView) && !authToken) {
+    intendedViewAfterLogin = resolvedView;
     showToast('Please log in to access candidate workspace.', 'warning');
     showAuthModal('login');
-    viewName = 'landing';
+    resolvedView = 'landing';
   }
 
   // Admin Route Authorization Check
-  if (viewName === 'admin' && (!currentUser || !currentUser.is_admin)) {
+  if (resolvedView === 'admin' && (!currentUser || !currentUser.is_admin)) {
     showToast('Access denied: Administrator privileges required.', 'error');
-    viewName = 'dashboard';
+    resolvedView = 'dashboard';
   }
 
-  if (viewName === 'practice') {
+  if (resolvedView === 'practice') {
     document.body.classList.add('in-interview');
   } else {
     document.body.classList.remove('in-interview');
+    if (typeof stopCamera === 'function') {
+      stopCamera();
+    }
   }
 
   // Safety Cleanup for Device Check MediaStreams when leaving device-check
-  if (viewName !== 'device-check' && typeof stopDeviceCheckStreams === 'function') {
-    stopDeviceCheckStreams();
+  if (resolvedView !== 'device-check' && typeof stopDeviceCheckStreams === 'function') {
+    // If transitioning to live practice, preserve the active video track for seamless stream handover
+    const shouldKeepVideo = (resolvedView === 'practice');
+    stopDeviceCheckStreams(!shouldKeepVideo);
   }
 
   const viewPanels = document.querySelectorAll('.view-panel');
   const navLinks = document.querySelectorAll('.nav-link');
 
   navLinks.forEach(link => {
-    if (link.getAttribute('data-view') === viewName) link.classList.add('active');
+    if (link.getAttribute('data-view') === resolvedView) link.classList.add('active');
     else link.classList.remove('active');
   });
 
@@ -1590,65 +1725,84 @@ function navigateToView(viewName, pushState = true) {
   const navAnalyticsBtn = document.getElementById('nav-analytics-btn');
   const navAdminBtn = document.getElementById('nav-admin-btn');
   if (navHomeBtn) {
-    if (viewName === 'landing') navHomeBtn.classList.add('active');
+    if (resolvedView === 'landing') navHomeBtn.classList.add('active');
     else navHomeBtn.classList.remove('active');
   }
   if (navDashBtn) {
-    if (viewName === 'dashboard') navDashBtn.classList.add('active');
+    if (resolvedView === 'dashboard') navDashBtn.classList.add('active');
     else navDashBtn.classList.remove('active');
   }
   if (navPracticeBtn) {
-    if (viewName === 'interview-setup' || viewName === 'practice' || viewName === 'device-check') navPracticeBtn.classList.add('active');
+    if (resolvedView === 'interview-setup' || resolvedView === 'practice' || resolvedView === 'device-check' || resolvedView === 'results') navPracticeBtn.classList.add('active');
     else navPracticeBtn.classList.remove('active');
   }
   if (navProfileBtn) {
-    if (viewName === 'profile') navProfileBtn.classList.add('active');
+    if (resolvedView === 'profile') navProfileBtn.classList.add('active');
     else navProfileBtn.classList.remove('active');
   }
   if (navAnalyticsBtn) {
-    if (viewName === 'analytics') navAnalyticsBtn.classList.add('active');
+    if (resolvedView === 'analytics') navAnalyticsBtn.classList.add('active');
     else navAnalyticsBtn.classList.remove('active');
   }
   if (navAdminBtn) {
-    if (viewName === 'admin') navAdminBtn.classList.add('active');
+    if (resolvedView === 'admin') navAdminBtn.classList.add('active');
     else navAdminBtn.classList.remove('active');
   }
 
   // Dedicated panel resolution for Profile, Analytics and all views
-  const targetPanelId = `view-${viewName}`;
+  const targetPanelId = `view-${resolvedView}`;
 
   viewPanels.forEach(panel => {
     if (panel.id === targetPanelId) {
       panel.classList.add('active');
+      panel.style.removeProperty('display');
     } else {
       panel.classList.remove('active');
+      panel.style.display = 'none';
     }
   });
 
+  const canonicalPath = VIEW_TO_PATH_MAP[resolvedView] || '/';
   if (pushState && window.history && window.history.pushState) {
     try {
-      const url = new URL(window.location);
-      url.searchParams.set('view', viewName);
-      window.history.pushState({ view: viewName }, '', url.toString());
+      if (window.location.pathname.startsWith('/frontend')) {
+        const url = new URL(window.location);
+        url.searchParams.set('view', resolvedView);
+        window.history.pushState({ view: resolvedView }, '', url.toString());
+      } else {
+        const targetUrl = canonicalPath + (window.location.search ? window.location.search : '');
+        if (window.location.pathname !== canonicalPath) {
+          window.history.pushState({ view: resolvedView, path: canonicalPath }, '', targetUrl);
+        }
+      }
     } catch (err) {
       console.debug('History pushState error:', err);
     }
   }
 
-  if (viewName === 'dashboard') {
+  // Smooth scroll to top of view
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
+  if (resolvedView === 'dashboard') {
     updateDashboardStats();
-  } else if (viewName === 'profile') {
+  } else if (resolvedView === 'profile') {
     initProfilePage();
-  } else if (viewName === 'analytics') {
+  } else if (resolvedView === 'analytics') {
     initAnalyticsPage();
-  } else if (viewName === 'history') {
+  } else if (resolvedView === 'history') {
     loadInterviewHistory();
-  } else if (viewName === 'interview-setup') {
+  } else if (resolvedView === 'interview-setup') {
     initInterviewSetupPage();
-  } else if (viewName === 'device-check') {
+  } else if (resolvedView === 'device-check') {
     initDeviceCheckPage();
-  } else if (viewName === 'admin') {
+  } else if (resolvedView === 'admin') {
     initAdminPage();
+  } else if (resolvedView === 'results') {
+    const compCard = document.getElementById('completion-card');
+    if (compCard) compCard.classList.remove('hidden');
+    renderResultsDashboard();
+  } else if (resolvedView === 'landing') {
+    syncLandingReportWithRealData();
   }
 }
 
@@ -1697,18 +1851,30 @@ function initQuestionWorkspace() {
 
   const viewDemoBtn = document.getElementById('btn-view-demo');
   if (viewDemoBtn) {
-    viewDemoBtn.addEventListener('click', () => {
-      showToast('Demo preview mode active. Click "Start Interview" to begin your live session.', 'info');
+    viewDemoBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
     });
   }
 
   const viewDemoFooterBtn = document.getElementById('btn-view-demo-footer');
   if (viewDemoFooterBtn) {
-    viewDemoFooterBtn.addEventListener('click', () => {
+    viewDemoFooterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       document.getElementById('performance-report')?.scrollIntoView({ behavior: 'smooth' });
-      showToast('Viewing live performance analytics report preview.', 'info');
     });
   }
+
+  // Feature Capsule Circle Arrow Smooth Scroll
+  ['btn-feat-arrow-ai', 'btn-feat-arrow-comm', 'btn-feat-arrow-vis', 'btn-feat-arrow-role'].forEach(arrowId => {
+    const arrowBtn = document.getElementById(arrowId);
+    if (arrowBtn) {
+      arrowBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+  });
 
   const brandHomeLink = document.getElementById('brand-home-link');
   if (brandHomeLink) brandHomeLink.addEventListener('click', goBackHome);
@@ -2221,6 +2387,7 @@ function loadQuestion(index) {
   if (qCard) qCard.classList.remove('hidden');
   if (reviewCard) reviewCard.classList.add('hidden');
   if (qResultCard) qResultCard.classList.add('hidden');
+  if (typeof hideEvaluationLoadingStage === 'function') hideEvaluationLoadingStage();
   const transEditor = document.getElementById('transcript-edit-input');
   if (transEditor) transEditor.value = '';
 
@@ -2411,7 +2578,7 @@ function initRecordingEngine() {
   const navAnalyticsBtn = document.getElementById('nav-analytics-btn');
   if (navAnalyticsBtn && !navAnalyticsBtn._bound) {
     navAnalyticsBtn._bound = true;
-    navAnalyticsBtn.onclick = () => navigateToView('history');
+    navAnalyticsBtn.onclick = () => navigateToView('analytics');
   }
 }
 
@@ -2955,8 +3122,15 @@ async function submitVoiceRecordingAndAnswer() {
     return;
   }
 
+  const transEditor = document.getElementById('transcript-edit-input');
+  const candidateText = transEditor ? transEditor.value.trim() : (currentDraftTranscript || '').trim();
+
+  // If candidate typed or edited text and no audio blob exists, proceed with text evaluation directly
   if (!recordedAudioBlob || recordedAudioBlob.size <= 100) {
-    showToast('Please record your answer before submitting.', 'warning');
+    if (candidateText && candidateText.length >= 5) {
+      return await submitFinalCandidateAnswer();
+    }
+    showToast('Please record your answer or provide a written response before submitting.', 'warning');
     return;
   }
 
@@ -2984,19 +3158,18 @@ async function submitVoiceRecordingAndAnswer() {
 
     if (!uploadRes.ok) {
       const errData = await uploadRes.json().catch(() => ({}));
-      throw new Error(errData.detail || `Server audio validation rejected payload (status ${uploadRes.status})`);
+      console.warn('Audio validation warning:', errData.detail);
+    } else {
+      const uploadData = await uploadRes.json();
+      console.log('Audio recording verified by server:', uploadData);
     }
 
-    const uploadData = await uploadRes.json();
-    console.log('Audio recording verified by server:', uploadData);
-    showToast('Audio recording validated successfully by server!', 'success');
-
-    // Proceed to evaluation
+    // Proceed to ML evaluation
     await submitFinalCandidateAnswer();
 
   } catch (err) {
-    console.error('Audio submission failed:', err);
-    showToast(`Submission error: ${err.message}`, 'error');
+    console.error('Audio upload error, proceeding with ML evaluation:', err);
+    await submitFinalCandidateAnswer();
   } finally {
     isSubmittingRecording = false;
     toggleRecordingButtonsState(true);
@@ -3042,7 +3215,7 @@ function sampleWebcamFrame() {
 
   cameraAvailable = true;
 
-  // Use MediaPipe 3D Landmark FaceMesh if available
+  // Use MediaPipe 3D Landmark FaceMesh
   if (isMediaPipeReady && faceMeshInstance) {
     try {
       faceMeshInstance.send({ image: videoEl });
@@ -3050,6 +3223,8 @@ function sampleWebcamFrame() {
     } catch (e) {
       console.warn('MediaPipe frame processing fallback:', e);
     }
+  } else if (!isMediaPipeReady && typeof window.FaceMesh !== 'undefined') {
+    initMediaPipeFaceMesh();
   }
 
   // Fallback Canvas Heuristic Sampling if MediaPipe is loading/offline
@@ -3228,14 +3403,14 @@ function setupAudioContext(stream) {
 }
 
 function drawWaveform() {
-  const canvas = document.getElementById('waveform-canvas');
+  const canvas = document.getElementById('waveform-canvas') || document.getElementById('interview-waveform-canvas');
   const transCanvas = document.getElementById('transcription-waveform-canvas');
   if (!canvas && !transCanvas) return;
   const ctx = canvas ? canvas.getContext('2d') : null;
   const tCtx = transCanvas ? transCanvas.getContext('2d') : null;
 
-  const width = canvas.width;
-  const height = canvas.height;
+  const width = canvas ? canvas.width : (transCanvas ? transCanvas.width : 200);
+  const height = canvas ? canvas.height : (transCanvas ? transCanvas.height : 50);
   const bufferLength = analyserNode ? analyserNode.frequencyBinCount : 32;
   const dataArray = new Uint8Array(bufferLength);
 
@@ -3437,6 +3612,62 @@ function handleFocusEditTranscript() {
   }
 }
 
+function showEvaluationLoadingStage() {
+  const qCard = document.getElementById('question-card') || document.getElementById('interview-question-card');
+  const reviewCard = document.getElementById('transcript-review-card');
+  const qResultCard = document.getElementById('question-result-card');
+  const evalLoadingCard = document.getElementById('interview-eval-loading-card');
+
+  if (qCard) qCard.classList.add('hidden');
+  if (reviewCard) reviewCard.classList.add('hidden');
+  if (qResultCard) qResultCard.classList.add('hidden');
+  if (evalLoadingCard) {
+    evalLoadingCard.classList.remove('hidden');
+    updateEvaluationStep(1);
+  }
+}
+
+function updateEvaluationStep(stepNumber) {
+  const fill = document.getElementById('iel-progress-fill');
+  const statusPill = document.getElementById('iel-status-pill');
+
+  for (let s = 1; s <= 4; s++) {
+    const item = document.getElementById(`iel-step-${s}`);
+    const statusText = document.getElementById(`iel-status-${s}`);
+    if (!item) continue;
+
+    if (s < stepNumber) {
+      item.className = 'iel-step-item done';
+      if (statusText) statusText.textContent = '✓ Complete';
+    } else if (s === stepNumber) {
+      item.className = 'iel-step-item active';
+      if (statusText) statusText.textContent = '⏳ Processing...';
+    } else {
+      item.className = 'iel-step-item';
+      if (statusText) statusText.textContent = 'Pending';
+    }
+  }
+
+  if (stepNumber === 1) {
+    if (fill) fill.style.width = '25%';
+    if (statusPill) statusPill.textContent = '🎙️ Transcribing speech & analyzing acoustic delivery...';
+  } else if (stepNumber === 2) {
+    if (fill) fill.style.width = '50%';
+    if (statusPill) statusPill.textContent = '🧠 Computing MiniLM embeddings & concept coverage...';
+  } else if (stepNumber === 3) {
+    if (fill) fill.style.width = '75%';
+    if (statusPill) statusPill.textContent = '🌲 Running Random Forest multi-rubric evaluation model...';
+  } else if (stepNumber >= 4) {
+    if (fill) fill.style.width = '100%';
+    if (statusPill) statusPill.textContent = '✨ Synthesizing personalized feedback & scoring verdict...';
+  }
+}
+
+function hideEvaluationLoadingStage() {
+  const evalLoadingCard = document.getElementById('interview-eval-loading-card');
+  if (evalLoadingCard) evalLoadingCard.classList.add('hidden');
+}
+
 async function submitFinalCandidateAnswer() {
   if (isProcessing) return;
 
@@ -3450,7 +3681,12 @@ async function submitFinalCandidateAnswer() {
 
   isProcessing = true;
   switchUIState(UI_STATES.PROCESSING);
-  updateProcessingStep(2);
+  showEvaluationLoadingStage();
+
+  // Progress through steps visually
+  updateEvaluationStep(1);
+  const stepTimer1 = setTimeout(() => { if (isProcessing) updateEvaluationStep(2); }, 650);
+  const stepTimer2 = setTimeout(() => { if (isProcessing) updateEvaluationStep(3); }, 1450);
 
   const currentQ = questions[currentQuestionIndex];
 
@@ -3465,25 +3701,37 @@ async function submitFinalCandidateAnswer() {
   };
 
   try {
-    updateProcessingStep(3);
     const res = await fetch(`${API_BASE_URL}/evaluate-answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
+    clearTimeout(stepTimer1);
+    clearTimeout(stepTimer2);
+
     if (!res.ok) {
       throw new Error(`Evaluation failed with status ${res.status}`);
     }
 
     const data = await res.json();
-    isProcessing = false;
-    handleEvaluationResult(data);
+    updateEvaluationStep(4);
+    setTimeout(() => {
+      isProcessing = false;
+      hideEvaluationLoadingStage();
+      handleEvaluationResult(data);
+    }, 450);
 
   } catch (err) {
     console.warn('API evaluate error, falling back to local multi-rubric evaluation:', err);
-    isProcessing = false;
-    simulateFallbackResult(currentQ);
+    clearTimeout(stepTimer1);
+    clearTimeout(stepTimer2);
+    updateEvaluationStep(4);
+    setTimeout(() => {
+      isProcessing = false;
+      hideEvaluationLoadingStage();
+      simulateFallbackResult(currentQ);
+    }, 450);
   }
 }
 
@@ -3571,6 +3819,7 @@ function handleEvaluationResult(data) {
  * Render Per-Question Result Card with accurate scoring, rubric concepts, and separate speech telemetry
  */
 function displayPerQuestionResultCard(answerObj) {
+  if (typeof hideEvaluationLoadingStage === 'function') hideEvaluationLoadingStage();
   const qCard = document.getElementById('question-card') || document.getElementById('interview-question-card');
   const reviewCard = document.getElementById('transcript-review-card');
   const qResultCard = document.getElementById('question-result-card');
@@ -3733,6 +3982,7 @@ function handleReRecordCurrentQuestion() {
   const qCard = document.getElementById('question-card') || document.getElementById('interview-question-card');
   const qResultCard = document.getElementById('question-result-card');
   const reviewCard = document.getElementById('transcript-review-card');
+  if (typeof hideEvaluationLoadingStage === 'function') hideEvaluationLoadingStage();
   if (qResultCard) qResultCard.classList.add('hidden');
   if (reviewCard) reviewCard.classList.add('hidden');
   if (qCard) qCard.classList.remove('hidden');
@@ -3796,38 +4046,47 @@ function displayAnswerResults(answerObj) {
 
   // 1. Predicted Score Gauge
   const predictedScore = answerObj.predicted_score;
-  document.getElementById('score-predicted-val').textContent = predictedScore.toFixed(1);
+  const scorePredEl = document.getElementById('score-predicted-val');
+  if (scorePredEl) scorePredEl.textContent = predictedScore.toFixed(1);
 
   const circleRadius = 52;
   const circumference = 2 * Math.PI * circleRadius; // ~326.72
   const strokeOffset = circumference - (predictedScore / 100) * circumference;
 
   const fillCircle = document.getElementById('gauge-fill-circle');
-  fillCircle.style.strokeDasharray = `${circumference}`;
-  fillCircle.style.strokeDashoffset = `${strokeOffset}`;
+  if (fillCircle) {
+    fillCircle.style.strokeDasharray = `${circumference}`;
+    fillCircle.style.strokeDashoffset = `${strokeOffset}`;
+  }
 
   // Grade pill
   const gradeBadge = document.getElementById('score-grade-badge');
-  if (predictedScore >= 85) {
-    gradeBadge.textContent = 'Excellent';
-    gradeBadge.className = 'score-grade-pill badge-success';
-  } else if (predictedScore >= 70) {
-    gradeBadge.textContent = 'Good Answer';
-    gradeBadge.className = 'score-grade-pill badge-warning-subtle';
-  } else {
-    gradeBadge.textContent = 'Needs Revision';
-    gradeBadge.className = 'score-grade-pill badge-subtle';
+  if (gradeBadge) {
+    if (predictedScore >= 85) {
+      gradeBadge.textContent = 'Excellent';
+      gradeBadge.className = 'score-grade-pill badge-success';
+    } else if (predictedScore >= 70) {
+      gradeBadge.textContent = 'Good Answer';
+      gradeBadge.className = 'score-grade-pill badge-warning-subtle';
+    } else {
+      gradeBadge.textContent = 'Needs Revision';
+      gradeBadge.className = 'score-grade-pill badge-subtle';
+    }
   }
 
   // 2. Metrics Breakdown
   const refSim = (answerObj.reference_similarity * 100).toFixed(1);
   const qSim = (answerObj.question_similarity * 100).toFixed(1);
 
-  document.getElementById('metric-ref-sim').textContent = `${refSim}%`;
-  document.getElementById('bar-ref-sim').style.width = `${refSim}%`;
+  const metricRefSim = document.getElementById('metric-ref-sim');
+  const barRefSim = document.getElementById('bar-ref-sim');
+  if (metricRefSim) metricRefSim.textContent = `${refSim}%`;
+  if (barRefSim) barRefSim.style.width = `${refSim}%`;
 
-  document.getElementById('metric-q-sim').textContent = `${qSim}%`;
-  document.getElementById('bar-q-sim').style.width = `${qSim}%`;
+  const metricQSim = document.getElementById('metric-q-sim');
+  const barQSim = document.getElementById('bar-q-sim');
+  if (metricQSim) metricQSim.textContent = `${qSim}%`;
+  if (barQSim) barQSim.style.width = `${qSim}%`;
 
   const conceptCov = answerObj.concept_coverage !== undefined ? answerObj.concept_coverage.toFixed(1) : '0.0';
   const completeness = answerObj.answer_completeness !== undefined ? answerObj.answer_completeness.toFixed(1) : '0.0';
@@ -3835,22 +4094,27 @@ function displayAnswerResults(answerObj) {
   const conceptEl = document.getElementById('metric-concept-cov');
   if (conceptEl) {
     conceptEl.textContent = `${conceptCov}%`;
-    document.getElementById('bar-concept-cov').style.width = `${conceptCov}%`;
+    const barConcept = document.getElementById('bar-concept-cov');
+    if (barConcept) barConcept.style.width = `${conceptCov}%`;
   }
 
   const compEl = document.getElementById('metric-completeness');
   if (compEl) {
     compEl.textContent = `${completeness}%`;
-    document.getElementById('bar-completeness').style.width = `${completeness}%`;
+    const barComp = document.getElementById('bar-completeness');
+    if (barComp) barComp.style.width = `${completeness}%`;
   }
 
-  document.getElementById('metric-ans-len').textContent = `${answerObj.answer_length} chars`;
+  const ansLenEl = document.getElementById('metric-ans-len');
+  if (ansLenEl) ansLenEl.textContent = `${answerObj.answer_length} chars`;
 
   const wordCount = answerObj.transcript.trim() ? answerObj.transcript.trim().split(/\s+/).length : 0;
-  document.getElementById('stat-word-count').textContent = `${wordCount} words`;
+  const wordCountEl = document.getElementById('stat-word-count');
+  if (wordCountEl) wordCountEl.textContent = `${wordCount} words`;
 
   // 3. Transcript
-  document.getElementById('transcript-text').textContent = `"${answerObj.transcript}"`;
+  const transcriptTextEl = document.getElementById('transcript-text');
+  if (transcriptTextEl) transcriptTextEl.textContent = `"${answerObj.transcript}"`;
 
   // 4. Dynamic AI Insights
   generateAIInsights(answerObj, wordCount);
@@ -3860,38 +4124,46 @@ function displayAnswerResults(answerObj) {
 
   // 6. Update Next Question Button Text
   const nextBtn = document.getElementById('btn-next-question');
-  if (currentQuestionIndex === questions.length - 1) {
-    nextBtn.textContent = 'Complete Interview →';
-  } else {
-    nextBtn.textContent = 'Next Question →';
+  if (nextBtn) {
+    if (currentQuestionIndex === questions.length - 1) {
+      nextBtn.textContent = 'Complete Interview →';
+    } else {
+      nextBtn.textContent = 'Next Question →';
+    }
   }
 }
 
 function displayCommunicationAnalysis(answerObj) {
   const sa = answerObj.speech_analysis || {};
   const statusBadge = document.getElementById('comm-status-badge');
+  const setField = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
 
   if (answerObj.isSkipped || sa.status === 'no_speech_detected') {
     if (statusBadge) { statusBadge.textContent = 'No speech detected'; statusBadge.className = 'badge badge-warning-subtle'; }
-    document.getElementById('comm-val-time').textContent = '0.0s';
-    document.getElementById('comm-val-wpm').textContent = '0 WPM';
-    document.getElementById('comm-val-fillers').textContent = '0';
-    document.getElementById('comm-val-fluency').textContent = '0.0%';
-    document.getElementById('comm-val-conciseness').textContent = '0.0%';
-    document.getElementById('comm-val-overall').textContent = '0.0%';
-    document.getElementById('filler-breakdown-row').innerHTML = '<span class="no-filler-msg">No audio recorded for analysis.</span>';
+    setField('comm-val-time', '0.0s');
+    setField('comm-val-wpm', '0 WPM');
+    setField('comm-val-fillers', '0');
+    setField('comm-val-fluency', '0.0%');
+    setField('comm-val-conciseness', '0.0%');
+    setField('comm-val-overall', '0.0%');
+    const fRow = document.getElementById('filler-breakdown-row');
+    if (fRow) fRow.innerHTML = '<span class="no-filler-msg">No audio recorded for analysis.</span>';
     return;
   }
 
   if (sa.status === 'insufficient_speech_data') {
     if (statusBadge) { statusBadge.textContent = 'Insufficient speech data'; statusBadge.className = 'badge badge-subtle'; }
-    document.getElementById('comm-val-time').textContent = sa.duration_seconds ? `${sa.duration_seconds}s` : 'Short';
-    document.getElementById('comm-val-wpm').textContent = sa.words_per_minute ? `${sa.words_per_minute} WPM` : 'N/A';
-    document.getElementById('comm-val-fillers').textContent = `${sa.filler_word_count || 0}`;
-    document.getElementById('comm-val-fluency').textContent = sa.fluency_score ? `${sa.fluency_score.toFixed(1)}%` : 'N/A';
-    document.getElementById('comm-val-conciseness').textContent = sa.conciseness_score ? `${sa.conciseness_score.toFixed(1)}%` : 'N/A';
-    document.getElementById('comm-val-overall').textContent = sa.communication_score ? `${sa.communication_score.toFixed(1)}%` : 'N/A';
-    document.getElementById('filler-breakdown-row').innerHTML = '<span class="no-filler-msg">Response too brief (< 3 words) for full fluency analysis.</span>';
+    setField('comm-val-time', sa.duration_seconds ? `${sa.duration_seconds}s` : 'Short');
+    setField('comm-val-wpm', sa.words_per_minute ? `${sa.words_per_minute} WPM` : 'N/A');
+    setField('comm-val-fillers', `${sa.filler_word_count || 0}`);
+    setField('comm-val-fluency', sa.fluency_score ? `${sa.fluency_score.toFixed(1)}%` : 'N/A');
+    setField('comm-val-conciseness', sa.conciseness_score ? `${sa.conciseness_score.toFixed(1)}%` : 'N/A');
+    setField('comm-val-overall', sa.communication_score ? `${sa.communication_score.toFixed(1)}%` : 'N/A');
+    const fRow = document.getElementById('filler-breakdown-row');
+    if (fRow) fRow.innerHTML = '<span class="no-filler-msg">Response too brief (< 3 words) for full fluency analysis.</span>';
     return;
   }
 
@@ -3905,12 +4177,12 @@ function displayCommunicationAnalysis(answerObj) {
   const concisenessText = sa.conciseness_score !== undefined ? `${sa.conciseness_score.toFixed(1)}%` : 'N/A';
   const overallCommText = sa.communication_score !== undefined ? `${sa.communication_score.toFixed(1)}%` : 'N/A';
 
-  document.getElementById('comm-val-time').textContent = dur;
-  document.getElementById('comm-val-wpm').textContent = wpmText;
-  document.getElementById('comm-val-fillers').textContent = `${fillerCount}`;
-  document.getElementById('comm-val-fluency').textContent = fluencyText;
-  document.getElementById('comm-val-conciseness').textContent = concisenessText;
-  document.getElementById('comm-val-overall').textContent = overallCommText;
+  setField('comm-val-time', dur);
+  setField('comm-val-wpm', wpmText);
+  setField('comm-val-fillers', `${fillerCount}`);
+  setField('comm-val-fluency', fluencyText);
+  setField('comm-val-conciseness', concisenessText);
+  setField('comm-val-overall', overallCommText);
 
   // Render filler words breakdown chips
   const fillerRow = document.getElementById('filler-breakdown-row');
@@ -4035,17 +4307,6 @@ function completeInterview() {
   stopSessionTimer();
   stopCamera();
 
-  const practiceView = document.getElementById('view-practice');
-  if (practiceView) {
-    practiceView.classList.add('session-completed');
-  }
-
-  const mainStage = document.getElementById('interview-main-stage');
-  if (mainStage) mainStage.style.display = 'none';
-
-  const bottomBar = document.getElementById('interview-bottombar');
-  if (bottomBar) bottomBar.style.display = 'none';
-
   // Fill in any unanswered/skipped questions in answers array
   questions.forEach((q, idx) => {
     if (!answers[idx]) {
@@ -4077,13 +4338,6 @@ function completeInterview() {
   const resCard = document.getElementById('results-card');
   if (resCard) resCard.classList.add('hidden');
 
-  // Show completion report card
-  const compCard = document.getElementById('completion-card');
-  if (compCard) {
-    compCard.classList.remove('hidden');
-    compCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
   // Render Dashboard Analytics & Sub-components
   renderResultsDashboard();
 
@@ -4092,7 +4346,40 @@ function completeInterview() {
   saveInterviewToBackend();
   updateDashboardStats();
 
-  showToast('Interview session completed! Your report is ready.', 'success');
+  // Show the Full Interview Completion Synthesis Overlay
+  const compOverlay = document.getElementById('interview-completion-overlay');
+  const compFill = document.getElementById('ico-progress-fill');
+  const compStatus = document.getElementById('ico-status-text');
+
+  if (compOverlay) {
+    compOverlay.classList.remove('hidden');
+    if (compFill) compFill.style.width = '30%';
+    if (compStatus) compStatus.textContent = 'Aggregating rubric dimensions and candidate scores...';
+
+    setTimeout(() => {
+      if (compFill) compFill.style.width = '65%';
+      if (compStatus) compStatus.textContent = 'Calculating communication fluency and visual engagement...';
+    }, 450);
+
+    setTimeout(() => {
+      if (compFill) compFill.style.width = '100%';
+      if (compStatus) compStatus.textContent = 'Rendering comprehensive performance analytics report...';
+    }, 900);
+
+    setTimeout(() => {
+      compOverlay.classList.add('hidden');
+      navigateToView('results');
+      const compCard = document.getElementById('completion-card');
+      if (compCard) compCard.classList.remove('hidden');
+      showToast('Interview session completed! Your report is ready.', 'success');
+    }, 1300);
+  } else {
+    // Switch to dedicated Results view and reveal report
+    navigateToView('results');
+    const compCard = document.getElementById('completion-card');
+    if (compCard) compCard.classList.remove('hidden');
+    showToast('Interview session completed! Your report is ready.', 'success');
+  }
 }
 
 function calculateOverallScore() {
@@ -4778,6 +5065,14 @@ async function saveInterviewToBackend() {
   }
 }
 
+function getUserHistoryStorageKey() {
+  if (currentUser && (currentUser.id || currentUser.user_id || currentUser.email)) {
+    const uid = currentUser.id || currentUser.user_id || currentUser.email;
+    return `${STORAGE_KEY_HISTORY}_user_${uid}`;
+  }
+  return `${STORAGE_KEY_HISTORY}_guest`;
+}
+
 function saveInterviewHistory() {
   if (!answers || answers.length === 0) return;
 
@@ -4805,12 +5100,12 @@ function saveInterviewHistory() {
   history.unshift(sessionRecord);
   if (history.length > 20) history.pop();
 
-  localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+  localStorage.setItem(getUserHistoryStorageKey(), JSON.stringify(history));
 }
 
 function getHistoryFromStorage() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+    const raw = localStorage.getItem(getUserHistoryStorageKey());
     return raw ? JSON.parse(raw) : [];
   } catch (e) {
     console.error('Error reading localStorage history:', e);
@@ -5039,23 +5334,11 @@ async function viewHistorySession(sessionOrId, isBackend = true) {
   }));
   sessionComplete = true;
 
-  // Switch to Practice view and show completion card
-  switchView('practice');
-
-  const landingCard = document.getElementById('start-interview-card');
-  if (landingCard) landingCard.classList.add('hidden');
-  const qCard = document.querySelector('.question-card');
-  if (qCard) qCard.style.display = 'none';
-  const recCard = document.getElementById('recording-card');
-  if (recCard) recCard.style.display = 'none';
-  const resCard = document.getElementById('results-card');
-  if (resCard) resCard.classList.add('hidden');
+  // Switch directly to dedicated Results view
+  navigateToView('results');
 
   const compCard = document.getElementById('completion-card');
-  if (compCard) {
-    compCard.classList.remove('hidden');
-    compCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  if (compCard) compCard.classList.remove('hidden');
 
   const durEl = document.getElementById('dash-interview-duration');
   if (durEl) durEl.textContent = sessionData.duration || 'N/A';
@@ -5087,7 +5370,7 @@ async function deleteHistorySession(interviewId, isBackend = true) {
   } else {
     let history = getHistoryFromStorage();
     history = history.filter(s => s.id !== interviewId);
-    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+    localStorage.setItem(getUserHistoryStorageKey(), JSON.stringify(history));
     showToast('Local history session removed.', 'info');
     loadInterviewHistory();
     updateDashboardStats();
@@ -5133,8 +5416,8 @@ async function updateDashboardStats() {
   const valProb = document.getElementById('dpg-val-prob');
 
   // 1. Fetch Fresh User Profile and Identity
-  let candidateName = 'Sumit';
-  let targetRole = 'Backend Developer';
+  let candidateName = 'Candidate';
+  let targetRole = 'Software Engineer';
 
   if (authToken && !currentUser) {
     try {
@@ -5154,7 +5437,7 @@ async function updateDashboardStats() {
   }
 
   if (currentUser) {
-    candidateName = currentUser.full_name || currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Sumit');
+    candidateName = currentUser.full_name || currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Candidate');
   } else if (userProfile && userProfile.name) {
     candidateName = userProfile.name;
   }
@@ -5212,7 +5495,7 @@ async function updateDashboardStats() {
   if (viewAllBtn) viewAllBtn.onclick = () => navigateToView('history');
 
   const updateProfDashBtn = document.getElementById('btn-update-profile-dash');
-  if (updateProfDashBtn) updateProfDashBtn.onclick = () => showProfileModal();
+  if (updateProfDashBtn) updateProfDashBtn.onclick = () => navigateToView('profile');
 
   const emptyStartBtn = document.getElementById('btn-empty-start-interview');
   if (emptyStartBtn) emptyStartBtn.onclick = () => openInterviewSetup();
@@ -5311,26 +5594,42 @@ async function updateDashboardStats() {
   if (bestScoreEl) bestScoreEl.textContent = `${totalBest}%`;
   if (latestScoreEl) latestScoreEl.textContent = `${totalLatest}%`;
 
-  // Trend indicators (Calculated against earlier half)
+  // Trend indicators (Calculated dynamically or hidden if totalCount < 2)
   const trendCompleted = document.getElementById('stat-trend-completed');
-  if (trendCompleted) {
-    trendCompleted.style.display = 'inline-flex';
-    trendCompleted.innerHTML = '<span class="trend-arrow">↑</span> +12%';
-  }
   const trendAvg = document.getElementById('stat-trend-avg');
-  if (trendAvg) {
-    trendAvg.style.display = 'inline-flex';
-    trendAvg.innerHTML = '<span class="trend-arrow">↑</span> +8%';
-  }
   const trendBest = document.getElementById('stat-trend-best');
-  if (trendBest) {
-    trendBest.style.display = 'inline-flex';
-    trendBest.innerHTML = '<span class="trend-arrow">↑</span> +5%';
-  }
   const trendLatest = document.getElementById('stat-trend-latest');
-  if (trendLatest) {
-    trendLatest.style.display = 'inline-flex';
-    trendLatest.innerHTML = '<span class="trend-arrow">↑</span> +2%';
+
+  if (totalCount < 2) {
+    if (trendCompleted) trendCompleted.style.display = 'none';
+    if (trendAvg) trendAvg.style.display = 'none';
+    if (trendBest) trendBest.style.display = 'none';
+    if (trendLatest) trendLatest.style.display = 'none';
+  } else {
+    const latestScore = Number(userInterviews[0].overall_score || 0);
+    const prevScore = Number(userInterviews[1].overall_score || 0);
+    const scoreDelta = (latestScore - prevScore).toFixed(1);
+    const isScoreUp = latestScore >= prevScore;
+
+    if (trendCompleted) {
+      trendCompleted.style.display = 'inline-flex';
+      trendCompleted.innerHTML = `<span class="trend-arrow">↑</span> +${totalCount}`;
+    }
+    if (trendAvg) {
+      const avgDelta = (latestScore - (totalScoreSum / totalCount)).toFixed(1);
+      const isAvgUp = avgDelta >= 0;
+      trendAvg.style.display = 'inline-flex';
+      trendAvg.innerHTML = `<span class="trend-arrow">${isAvgUp ? '↑' : '↓'}</span> ${isAvgUp ? '+' : ''}${avgDelta}%`;
+    }
+    if (trendBest) {
+      trendBest.style.display = 'inline-flex';
+      const isBest = latestScore >= Number(totalBest);
+      trendBest.innerHTML = isBest ? '<span class="trend-arrow">★</span> Peak' : `<span class="trend-arrow">→</span> ${(latestScore - Number(totalBest)).toFixed(1)}%`;
+    }
+    if (trendLatest) {
+      trendLatest.style.display = 'inline-flex';
+      trendLatest.innerHTML = `<span class="trend-arrow">${isScoreUp ? '↑' : '↓'}</span> ${isScoreUp ? '+' : ''}${scoreDelta}%`;
+    }
   }
 
   // Populate Hero Progress Widget
@@ -5397,46 +5696,86 @@ async function updateDashboardStats() {
     focusList.innerHTML = '';
     const focusItems = [];
 
-    focusItems.push({
-      iconClass: 'fci-blue',
-      iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
-      title: 'Communication Pacing',
-      desc: 'Work on reducing filler words and keeping a steady 130 WPM speaking rhythm.',
-      targetId: userInterviews[0].id
-    });
+    if (userInterviews && userInterviews.length > 0) {
+      const latest = userInterviews[0];
+      const commScore = latest.communication_score != null ? Number(latest.communication_score) : null;
+      const techScore = latest.technical_score != null ? Number(latest.technical_score) : null;
+      const overallScore = latest.overall_score != null ? Number(latest.overall_score) : null;
 
-    focusItems.push({
-      iconClass: 'fci-amber',
-      iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>',
-      title: 'Concept Detail & Depth',
-      desc: 'Include specific architectural patterns and concrete code examples in your answers.',
-      targetId: userInterviews[0].id
-    });
+      // Check Communication Dimension
+      if (commScore !== null && commScore < 75) {
+        focusItems.push({
+          iconClass: 'fci-blue',
+          iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
+          title: 'Communication & Speech Pacing',
+          desc: `Latest communication score is ${commScore.toFixed(0)}%. Focus on reducing filler words and keeping a steady, articulate cadence.`,
+          targetId: latest.id
+        });
+      }
 
-    focusItems.push({
-      iconClass: 'fci-cyan',
-      iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>',
-      title: 'Camera Attention',
-      desc: 'Maintain direct eye contact with your camera feed during technical explanations.',
-      targetId: userInterviews[0].id
-    });
+      // Check Technical Depth Dimension
+      if (techScore !== null && techScore < 75) {
+        focusItems.push({
+          iconClass: 'fci-amber',
+          iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>',
+          title: 'Technical Depth & Architecture',
+          desc: `Technical mastery is currently at ${techScore.toFixed(0)}%. Include concrete trade-offs, design patterns, and edge cases in your answers.`,
+          targetId: latest.id
+        });
+      }
 
-    focusItems.forEach(item => {
-      const itemEl = document.createElement('div');
-      itemEl.className = 'focus-card-item';
-      itemEl.onclick = () => viewHistorySession(item.targetId, true);
-      itemEl.innerHTML = `
-        <div class="fci-icon ${item.iconClass}">
-          ${item.iconSvg}
+      // Check Overall / Problem Solving Dimension
+      if (overallScore !== null && overallScore < 70) {
+        focusItems.push({
+          iconClass: 'fci-cyan',
+          iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>',
+          title: 'Answer Structure (STAR Method)',
+          desc: 'Structure your scenarios clearly: Situation, Task, Action taken, and quantifiable business Result.',
+          targetId: latest.id
+        });
+      }
+
+      // If candidate performed excellently across the board, provide advanced refinement recommendations
+      if (focusItems.length === 0) {
+        focusItems.push({
+          iconClass: 'fci-blue',
+          iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
+          title: 'Advanced System Scenarios',
+          desc: `Outstanding overall score of ${overallScore ? overallScore.toFixed(0) : 85}%. Practice high-difficulty distributed system and failure-mode questions.`,
+          targetId: latest.id
+        });
+        focusItems.push({
+          iconClass: 'fci-cyan',
+          iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>',
+          title: 'High Concept Density',
+          desc: 'Focus on delivering high-impact architectural explanations in under 90 seconds per response.',
+          targetId: latest.id
+        });
+      }
+
+      focusItems.forEach(item => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'focus-card-item';
+        itemEl.onclick = () => viewHistorySession(item.targetId, true);
+        itemEl.innerHTML = `
+          <div class="fci-icon ${item.iconClass}">
+            ${item.iconSvg}
+          </div>
+          <div class="fci-content">
+            <h4 class="fci-title">${escapeHtml(item.title)}</h4>
+            <p class="fci-desc">${escapeHtml(item.desc)}</p>
+          </div>
+          <span class="fci-arrow">›</span>
+        `;
+        focusList.appendChild(itemEl);
+      });
+    } else {
+      focusList.innerHTML = `
+        <div class="empty-state-mini" style="padding: 1.5rem; text-align: center; color: var(--color-text-muted, #64748b);">
+          <p>Complete your first practice interview to generate AI-tailored focus recommendations.</p>
         </div>
-        <div class="fci-content">
-          <h4 class="fci-title">${escapeHtml(item.title)}</h4>
-          <p class="fci-desc">${escapeHtml(item.desc)}</p>
-        </div>
-        <span class="fci-arrow">›</span>
       `;
-      focusList.appendChild(itemEl);
-    });
+    }
   }
 
   // 6. Performance Overview Chart & Date Filter Logic
@@ -5669,28 +6008,9 @@ async function handleProfileModalResumeUpload(file) {
 }
 
 async function validateAuthSession() {
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('auto_login') === 'sumit' && !authToken) {
-    try {
-      const loginRes = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'skgounder50@gmail.com', password: 'password123' })
-      });
-      if (loginRes.ok) {
-        const loginData = await loginRes.json();
-        authToken = loginData.access_token;
-        currentUser = loginData.user;
-        localStorage.setItem(STORAGE_KEY_TOKEN, authToken);
-        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
-      }
-    } catch (e) {
-      console.warn('Auto-login error:', e);
-    }
-  }
-
   if (!authToken) return;
 
+  const urlParams = new URLSearchParams(window.location.search);
   try {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
       method: 'GET',
@@ -5701,10 +6021,14 @@ async function validateAuthSession() {
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
       updateAuthWidget();
       await loadUserProfile();
-      const requestedView = urlParams.get('view') || (window.location.hash ? window.location.hash.replace('#', '') : null);
-      if (requestedView && ['dashboard', 'practice', 'history', 'report', 'interview-setup', 'device-check', 'landing', 'profile', 'analytics', 'admin'].includes(requestedView)) {
+      const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+      const requestedView = (currentPath !== '/' && CANONICAL_VIEW_MAP[currentPath])
+        ? CANONICAL_VIEW_MAP[currentPath]
+        : (urlParams.get('view') || (window.location.hash ? window.location.hash.replace('#', '') : null));
+
+      if (requestedView && requestedView !== 'landing') {
         navigateToView(requestedView, false);
-      } else if (!window.location.hash || window.location.hash === '#dashboard' || urlParams.has('auto_login')) {
+      } else if (window.location.hash === '#dashboard') {
         navigateToView('dashboard', false);
       }
     } else {
@@ -5820,7 +6144,7 @@ function updateAuthWidget() {
   const userChip = document.getElementById('nav-user-chip');
 
   if (authToken && currentUser) {
-    const rawName = currentUser.full_name || currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Sumit');
+    const rawName = currentUser.full_name || currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Candidate');
     const firstName = rawName.split(' ')[0];
     if (mainNav) mainNav.classList.add('hidden');
     if (authNav) authNav.classList.remove('hidden');
@@ -5836,12 +6160,26 @@ function updateAuthWidget() {
 
     // Update Dropdown Header Info
     const npmdName = document.getElementById('npmd-user-name');
-    if (npmdName) npmdName.textContent = currentUser.full_name || rawName || 'Sumit Gounder';
+    if (npmdName) npmdName.textContent = currentUser.full_name || rawName || 'Candidate';
     const npmdSub = document.getElementById('npmd-user-sub');
     if (npmdSub) {
-      const edu = (userProfile && userProfile.education) ? userProfile.education : 'BCA Student';
-      const col = (userProfile && userProfile.college) ? userProfile.college : 'Navgujarat BCA';
-      npmdSub.textContent = `${edu} • ${col}`;
+      const edu = (userProfile && userProfile.education) ? userProfile.education : '';
+      const col = (userProfile && userProfile.college) ? userProfile.college : '';
+      if (edu && col) {
+        npmdSub.textContent = `${edu} • ${col}`;
+      } else if (edu || col) {
+        npmdSub.textContent = edu || col;
+      } else {
+        npmdSub.textContent = (userProfile && userProfile.target_role) || 'Software Engineer';
+      }
+    }
+
+    // Sync Avatars if present
+    if (userProfile && userProfile.avatar_url) {
+      const avatarMini = document.getElementById('nav-user-avatar-mini');
+      if (avatarMini) avatarMini.src = userProfile.avatar_url;
+      const npmdAvatar = document.getElementById('npmd-avatar-img');
+      if (npmdAvatar) npmdAvatar.src = userProfile.avatar_url;
     }
 
     // Event listeners for authenticated navigation buttons
@@ -6131,8 +6469,12 @@ function clearAuthSession() {
   authToken = null;
   currentUser = null;
   userProfile = null;
+  currentUploadedResume = null;
+  answers = [];
+  questions = [];
   localStorage.removeItem(STORAGE_KEY_TOKEN);
   localStorage.removeItem(STORAGE_KEY_USER);
+  displayParsedResumePreview(null, null);
   updateAuthWidget();
 }
 
@@ -6295,7 +6637,7 @@ function initResumeUploadInSetup() {
   const fileInput = document.getElementById('setup-resume-file-input');
   const reuploadBtn = document.getElementById('btn-reupload-resume');
 
-  // Ensure default demo resume or loaded profile resume is shown immediately
+  // Load user profile resume if present, otherwise clean empty state
   if (!currentUploadedResume) {
     if (userProfile && userProfile.resume_filename && userProfile.parsed_resume) {
       currentUploadedResume = {
@@ -6303,18 +6645,15 @@ function initResumeUploadInSetup() {
         parsed: userProfile.parsed_resume
       };
     } else {
-      currentUploadedResume = {
-        filename: 'Jake_s_Resume__Anonymous__1__2_.pdf',
-        parsed: {
-          skills: ['PYTHON', 'JAVASCRIPT', 'JAVA', 'C#', 'PHP', 'HTML', 'CSS', 'DJANGO', 'LARAVEL', 'BOOTSTRAP', 'MYSQL', 'ORACLE', 'GITHUB', 'VS CODE'],
-          projects: [{ name: 'Bootstrap', title: 'Bootstrap' }],
-          experiences: [{ title: 'Backend Developer', role: 'Backend Developer' }]
-        }
-      };
+      currentUploadedResume = null;
     }
   }
 
-  displayParsedResumePreview(currentUploadedResume.filename, currentUploadedResume.parsed);
+  if (currentUploadedResume) {
+    displayParsedResumePreview(currentUploadedResume.filename, currentUploadedResume.parsed);
+  } else {
+    displayParsedResumePreview(null, null);
+  }
 
   if (dropzone && fileInput && !dropzone._boundEvents) {
     dropzone._boundEvents = true;
@@ -6453,6 +6792,23 @@ function displayParsedResumePreview(filename, parsed) {
   const statusBadge = document.getElementById('resume-status-badge');
   const sumResumeEl = document.getElementById('sum-resume');
 
+  if (!filename && !parsed) {
+    if (dropzone) dropzone.classList.remove('hidden');
+    if (preview) preview.classList.add('hidden');
+    if (filenameEl) filenameEl.textContent = 'No resume uploaded yet';
+    if (metaStatsEl) metaStatsEl.textContent = 'Upload a resume for AI question personalization';
+    if (statusBadge) {
+      statusBadge.innerHTML = 'STANDARD';
+      statusBadge.className = 'badge-standard';
+    }
+    if (sumResumeEl) {
+      sumResumeEl.textContent = 'Standard Profile';
+    }
+    if (chipsContainer) chipsContainer.innerHTML = '';
+    if (projSummaryEl) projSummaryEl.innerHTML = '';
+    return;
+  }
+
   if (dropzone) dropzone.classList.add('hidden');
   if (preview) preview.classList.remove('hidden');
 
@@ -6481,7 +6837,7 @@ function displayParsedResumePreview(filename, parsed) {
   if (projSummaryEl) {
     const projNames = (projects.length > 0)
       ? projects.map(p => typeof p === 'string' ? p : (p.name || p.title || 'Project')).slice(0, 3).join(', ')
-      : 'Bootstrap';
+      : 'General Projects';
     projSummaryEl.innerHTML = `<span class="sfp-icon">📁</span> <span class="sfp-label">Featured Projects:</span> <strong class="sfp-name">${projNames}</strong>`;
   }
 
@@ -6491,7 +6847,7 @@ function displayParsedResumePreview(filename, parsed) {
   }
 
   if (sumResumeEl) {
-    const displayName = filename || 'Jake_s_Resume__Anonymous__1__2_.pdf';
+    const displayName = filename || 'Candidate_Resume.pdf';
     sumResumeEl.textContent = displayName.length > 18 ? displayName.slice(0, 16) + '...' : displayName;
   }
 
@@ -6601,7 +6957,7 @@ function updateSetupSummary() {
   if (document.getElementById('sum-mode')) document.getElementById('sum-mode').textContent = currentInterviewConfig.mode;
   const sumResumeEl = document.getElementById('sum-resume');
   if (sumResumeEl) {
-    const resName = currentUploadedResume?.filename || userProfile?.resume_filename || 'Jake_s_Resume__Anonymous__1__2_.pdf';
+    const resName = currentUploadedResume?.filename || userProfile?.resume_filename || 'Standard Profile';
     sumResumeEl.textContent = resName.length > 18 ? resName.slice(0, 16) + '...' : resName;
   }
 
@@ -7042,6 +7398,10 @@ function bindProfilePageInteractions() {
   const backDashBtn = document.getElementById('btn-profile-back-dash');
   if (backDashBtn) backDashBtn.onclick = () => navigateToView('dashboard');
 
+  // Edit Profile button
+  const toProfileBtn = document.getElementById('btn-analytics-to-profile');
+  if (toProfileBtn) toProfileBtn.onclick = () => navigateToView('profile');
+
   // Download Full Report button
   const dlReportBtn = document.getElementById('btn-download-full-report');
   if (dlReportBtn) dlReportBtn.onclick = () => downloadProfileReportPDF();
@@ -7129,69 +7489,100 @@ function renderProfilePageData(data) {
   const recs = data.recommendations || [];
   const interviews = data.interviews || [];
   const trends = stats.trends || {};
+  const totalCount = stats.total_interviews !== undefined ? stats.total_interviews : 0;
+  const hasData = totalCount > 0;
 
   // 1. User Hero Information
   const nameEl = document.getElementById('profile-user-name');
-  if (nameEl) nameEl.textContent = prof.name || 'Sumit Gounder';
+  const candidateDisplayName = prof.name || (currentUser && (currentUser.full_name || currentUser.name)) || 'Candidate';
+  if (nameEl) nameEl.textContent = candidateDisplayName;
 
   const subEl = document.getElementById('profile-user-subtitle');
   if (subEl) {
-    const edu = prof.education || 'BCA Student';
-    const col = prof.college || 'Navgujarat BCA';
-    subEl.textContent = col ? `${edu} • ${col}` : edu;
+    const edu = prof.education || '';
+    const col = prof.college || '';
+    if (edu && col) subEl.textContent = `${edu} • ${col}`;
+    else if (edu || col) subEl.textContent = edu || col;
+    else subEl.textContent = prof.target_role || 'Software Engineer';
   }
 
   const joinedEl = document.getElementById('profile-joined-date');
-  if (joinedEl) joinedEl.textContent = stats.joined_date || 'Nov 2025';
+  if (joinedEl) joinedEl.textContent = stats.joined_date || 'Member';
 
   const countEl = document.getElementById('profile-interviews-count');
-  const totalCount = stats.total_interviews !== undefined ? stats.total_interviews : 0;
   if (countEl) countEl.textContent = totalCount;
 
   const bestScoreVal = stats.best_score !== undefined ? parseFloat(stats.best_score) : 0.0;
   const bestEl = document.getElementById('profile-best-score');
-  if (bestEl) bestEl.textContent = `${bestScoreVal.toFixed(1)}%`;
+  if (bestEl) bestEl.textContent = hasData ? `${bestScoreVal.toFixed(1)}%` : '--';
+
+  // Trophy / Candidate Standing Badge
+  const trophyBadge = document.getElementById('profile-trophy-badge');
+  const overallValNum = stats.overall_score !== undefined ? parseFloat(stats.overall_score) : 0.0;
+  if (trophyBadge) {
+    if (!hasData) {
+      trophyBadge.innerHTML = '🎯 <span>New Candidate</span>';
+      trophyBadge.className = 'pill-trophy pill-neutral';
+    } else if (overallValNum >= 85) {
+      trophyBadge.innerHTML = '🏆 <span>Top 10% Candidate</span>';
+      trophyBadge.className = 'pill-trophy';
+    } else if (overallValNum >= 70) {
+      trophyBadge.innerHTML = '⭐ <span>Top 25% Candidate</span>';
+      trophyBadge.className = 'pill-trophy';
+    } else {
+      trophyBadge.innerHTML = '📈 <span>Active Candidate</span>';
+      trophyBadge.className = 'pill-trophy';
+    }
+  }
 
   // 2. Top 4 Summary Cards
-  const overallValNum = stats.overall_score !== undefined ? parseFloat(stats.overall_score) : 0.0;
   const overallVal = overallValNum.toFixed(1);
   const cardOverallEl = document.getElementById('card-overall-score');
-  if (cardOverallEl) cardOverallEl.textContent = `${overallVal}%`;
+  if (cardOverallEl) cardOverallEl.textContent = hasData ? `${overallVal}%` : '0.0%';
 
   const donutFill = document.getElementById('card-donut-fill');
   if (donutFill) {
     const radius = 40;
     const circumference = 2 * Math.PI * radius; // 251.2
-    const offset = circumference - (overallValNum / 100) * circumference;
+    const fillFraction = hasData ? Math.min(1.0, Math.max(0, overallValNum / 100)) : 0;
+    const offset = circumference - fillFraction * circumference;
     donutFill.style.strokeDashoffset = offset;
   }
 
   const trendOverallEl = document.getElementById('trend-overall-val');
-  if (trendOverallEl) trendOverallEl.innerHTML = `<span class="arrow">↑</span> ${trends.overall || '+0.0%'}`;
+  if (trendOverallEl) {
+    const trendText = trends.overall || (hasData ? '+0.0%' : '--');
+    trendOverallEl.innerHTML = `<span class="arrow">${hasData ? '↑' : '•'}</span> ${trendText}`;
+  }
 
   const cardInterviewsEl = document.getElementById('card-total-interviews');
   if (cardInterviewsEl) cardInterviewsEl.textContent = totalCount;
 
   const trendInterviewsEl = document.getElementById('trend-interviews-val');
-  if (trendInterviewsEl) trendInterviewsEl.innerHTML = `<span class="arrow">↑</span> ${trends.interviews || `${totalCount} total`}`;
+  if (trendInterviewsEl) {
+    trendInterviewsEl.innerHTML = `<span class="arrow">${hasData ? '↑' : '•'}</span> ${trends.interviews || `${totalCount} total`}`;
+  }
 
   const cardTimeEl = document.getElementById('card-total-time');
   if (cardTimeEl) cardTimeEl.textContent = stats.total_practice_time || '0m';
 
   const trendTimeEl = document.getElementById('trend-time-val');
-  if (trendTimeEl) trendTimeEl.innerHTML = `<span class="arrow">↑</span> ${trends.time || '0m'}`;
+  if (trendTimeEl) {
+    trendTimeEl.innerHTML = `<span class="arrow">${hasData ? '↑' : '•'}</span> ${trends.time || (hasData ? 'Recorded time' : '0m')}`;
+  }
 
   const avgScoreNum = stats.avg_score !== undefined ? parseFloat(stats.avg_score) : 0.0;
   const cardAvgEl = document.getElementById('card-avg-score');
-  if (cardAvgEl) cardAvgEl.textContent = `${avgScoreNum.toFixed(1)}%`;
+  if (cardAvgEl) cardAvgEl.textContent = hasData ? `${avgScoreNum.toFixed(1)}%` : '0.0%';
 
   const trendAvgEl = document.getElementById('trend-avg-val');
-  if (trendAvgEl) trendAvgEl.innerHTML = `<span class="arrow">↑</span> ${trends.avg || '+0.0%'}`;
+  if (trendAvgEl) {
+    trendAvgEl.innerHTML = `<span class="arrow">${hasData ? '↑' : '•'}</span> ${trends.avg || (hasData ? '+0.0%' : '--')}`;
+  }
 
   // 3. Radar Chart
   const radarCanvas = document.getElementById('perf-radar-canvas');
   if (radarCanvas) {
-    const hasData = totalCount > 0;
     const yourRadarScores = hasData ? [
       perf.answer_quality || 0.0,
       perf.communication || 0.0,
@@ -7199,8 +7590,8 @@ function renderProfilePageData(data) {
       perf.question_performance || 0.0,
       perf.confidence || 0.0
     ] : [0, 0, 0, 0, 0];
-    const avgRadarScores = [70, 70, 70, 70, 70];
-    renderRadarChart(radarCanvas, yourRadarScores, avgRadarScores);
+    const avgRadarScores = hasData ? [70, 70, 70, 70, 70] : [0, 0, 0, 0, 0];
+    renderRadarChart(radarCanvas, yourRadarScores, avgRadarScores, hasData);
   }
 
   // 4. Score Trend Line Chart
@@ -7210,48 +7601,70 @@ function renderProfilePageData(data) {
     const labels = trendData.labels || [];
     const yourScores = trendData.your_scores || [];
     const avgScores = trendData.avg_scores || [];
-    renderScoreTrendChart(trendCanvas, labels, yourScores, avgScores);
+    const hasTrendData = hasData && yourScores.length > 0;
+    renderScoreTrendChart(trendCanvas, labels, yourScores, avgScores, hasTrendData);
 
     // Callout badge value
+    const calloutBadge = document.getElementById('trend-callout-badge');
     const calloutVal = document.getElementById('trend-callout-val');
-    if (calloutVal) {
-      if (yourScores.length > 0) {
-        calloutVal.textContent = `${yourScores[yourScores.length - 1].toFixed(1)}%`;
-      } else {
-        calloutVal.textContent = '0.0%';
-      }
+    if (hasTrendData && yourScores.length > 0) {
+      if (calloutBadge) calloutBadge.style.display = 'inline-flex';
+      if (calloutVal) calloutVal.textContent = `${yourScores[yourScores.length - 1].toFixed(1)}%`;
+    } else {
+      if (calloutBadge) calloutBadge.style.display = 'none';
+      if (calloutVal) calloutVal.textContent = '0.0%';
     }
   }
 
   // 5. Detailed Metrics (5 Mini Boxes)
   const setElText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-  setElText('det-metric-quality', `${parseFloat(perf.answer_quality || 0.0).toFixed(1)}%`);
-  setElText('det-metric-comm', `${parseFloat(perf.communication || 0.0).toFixed(1)}%`);
-  setElText('det-metric-visual', `${parseFloat(perf.visual_presence || 0.0).toFixed(1)}%`);
-  setElText('det-metric-qp', `${parseFloat(perf.question_performance || 0.0).toFixed(1)}%`);
-  setElText('det-metric-conf', `${parseFloat(perf.confidence || 0.0).toFixed(1)}%`);
+  if (!hasData) {
+    setElText('det-metric-quality', '0.0%');
+    setElText('det-metric-comm', '0.0%');
+    setElText('det-metric-visual', '0.0%');
+    setElText('det-metric-qp', '0.0%');
+    setElText('det-metric-conf', '0.0%');
+  } else {
+    setElText('det-metric-quality', `${parseFloat(perf.answer_quality || 0.0).toFixed(1)}%`);
+    setElText('det-metric-comm', `${parseFloat(perf.communication || 0.0).toFixed(1)}%`);
+    setElText('det-metric-visual', `${parseFloat(perf.visual_presence || 0.0).toFixed(1)}%`);
+    setElText('det-metric-qp', `${parseFloat(perf.question_performance || 0.0).toFixed(1)}%`);
+    setElText('det-metric-conf', `${parseFloat(perf.confidence || 0.0).toFixed(1)}%`);
+  }
 
-  // 6. Top Skills Bars
-  const commSkill = skills.find(s => s.name === 'Communication') || { score: 92 };
-  const techSkill = skills.find(s => s.name === 'Technical Knowledge') || { score: 88 };
-  const probSkill = skills.find(s => s.name === 'Problem Solving') || { score: 85 };
-  const confSkill = skills.find(s => s.name === 'Confidence') || { score: 83 };
-
-  setElText('skill-val-comm', `${Math.round(commSkill.score)}%`);
+  // 6. Top Skills Bars (Derive strictly from evaluated results or show 0)
   const barComm = document.getElementById('skill-bar-comm');
-  if (barComm) barComm.style.width = `${Math.min(100, Math.round(commSkill.score))}%`;
-
-  setElText('skill-val-tech', `${Math.round(techSkill.score)}%`);
   const barTech = document.getElementById('skill-bar-tech');
-  if (barTech) barTech.style.width = `${Math.min(100, Math.round(techSkill.score))}%`;
-
-  setElText('skill-val-prob', `${Math.round(probSkill.score)}%`);
   const barProb = document.getElementById('skill-bar-prob');
-  if (barProb) barProb.style.width = `${Math.min(100, Math.round(probSkill.score))}%`;
-
-  setElText('skill-val-conf', `${Math.round(confSkill.score)}%`);
   const barConf = document.getElementById('skill-bar-conf');
-  if (barConf) barConf.style.width = `${Math.min(100, Math.round(confSkill.score))}%`;
+
+  if (!hasData) {
+    setElText('skill-val-comm', '0%');
+    if (barComm) barComm.style.width = '0%';
+    setElText('skill-val-tech', '0%');
+    if (barTech) barTech.style.width = '0%';
+    setElText('skill-val-prob', '0%');
+    if (barProb) barProb.style.width = '0%';
+    setElText('skill-val-conf', '0%');
+    if (barConf) barConf.style.width = '0%';
+  } else {
+    const commSkill = skills.find(s => s.name === 'Communication') || { score: 0 };
+    const techSkill = skills.find(s => s.name === 'Technical Knowledge') || { score: 0 };
+    const probSkill = skills.find(s => s.name === 'Problem Solving') || { score: 0 };
+    const confSkill = skills.find(s => s.name === 'Confidence') || { score: 0 };
+
+    setElText('skill-val-comm', `${Math.round(commSkill.score)}%`);
+    if (barComm) barComm.style.width = `${Math.min(100, Math.max(0, Math.round(commSkill.score)))}%`;
+
+    setElText('skill-val-tech', `${Math.round(techSkill.score)}%`);
+    if (barTech) barTech.style.width = `${Math.min(100, Math.max(0, Math.round(techSkill.score)))}%`;
+
+    setElText('skill-val-prob', `${Math.round(probSkill.score)}%`);
+    if (barProb) barProb.style.width = `${Math.min(100, Math.max(0, Math.round(probSkill.score)))}%`;
+
+    setElText('skill-val-conf', `${Math.round(confSkill.score)}%`);
+    if (barConf) barConf.style.width = `${Math.min(100, Math.max(0, Math.round(confSkill.score)))}%`;
+  }
 
   // 7. Recent Interview Reports List
   const reportsList = document.getElementById('profile-recent-reports-list');
@@ -7259,13 +7672,23 @@ function renderProfilePageData(data) {
     reportsList.innerHTML = '';
     const displaySessions = interviews.slice(0, 3);
     if (displaySessions.length === 0) {
-      reportsList.innerHTML = '<p style="color: #64748B; padding: 12px; font-size: 13px;">No recent interviews found.</p>';
+      reportsList.innerHTML = `
+        <div class="reports-empty-box">
+          <p>No interview sessions recorded yet.</p>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-empty-reports-start-interview" style="margin-top: 6px;">
+            Start Your First Interview →
+          </button>
+        </div>
+      `;
+      const emptyStart = document.getElementById('btn-empty-reports-start-interview');
+      if (emptyStart) emptyStart.onclick = () => openInterviewSetup();
     } else {
-      displaySessions.forEach((inv, index) => {
+      displaySessions.forEach((inv) => {
         const score = parseFloat(inv.overall_score || 0.0);
         let pillClass = 'pill-green';
-        if (score < 86 && score >= 80) pillClass = 'pill-purple';
-        else if (score < 90 && score >= 86) pillClass = 'pill-blue';
+        if (score < 80) pillClass = 'pill-amber';
+        else if (score < 86) pillClass = 'pill-purple';
+        else if (score < 90) pillClass = 'pill-blue';
 
         const row = document.createElement('div');
         row.className = 'recent-report-row';
@@ -7296,6 +7719,54 @@ function renderProfilePageData(data) {
       });
     }
   }
+
+  // 8. Render Dynamic AI Insights
+  const insightsContainer = document.getElementById('profile-ai-insights-list');
+  if (insightsContainer) {
+    insightsContainer.innerHTML = '';
+    const insightsList = data.insights || [];
+    if (insightsList.length === 0) {
+      insightsContainer.innerHTML = '<div class="empty-insights-box">Complete your first interview to generate AI performance diagnostics.</div>';
+    } else {
+      const colors = ['icon-green', 'icon-purple', 'icon-amber'];
+      const icons = ['✓', '⚡', 'ℹ'];
+      insightsList.forEach((text, i) => {
+        const colorClass = colors[i % colors.length];
+        const icon = icons[i % icons.length];
+        const row = document.createElement('div');
+        row.className = 'insight-row-card';
+        row.innerHTML = `
+          <div class="irc-icon-circle ${colorClass}">${icon}</div>
+          <p class="irc-text">${escapeHtml(text)}</p>
+        `;
+        insightsContainer.appendChild(row);
+      });
+    }
+  }
+
+  // 9. Render Dynamic Personalized Recommendations
+  const recsContainer = document.getElementById('profile-recommendations-list');
+  if (recsContainer) {
+    recsContainer.innerHTML = '';
+    const recsList = data.recommendations || [];
+    if (recsList.length === 0) {
+      recsContainer.innerHTML = '<div class="empty-insights-box" style="grid-column: 1 / -1;">No recommendations yet. Start an interview to identify key areas for growth.</div>';
+    } else {
+      const boxColors = ['box-blue', 'box-purple', 'box-amber'];
+      const boxIcons = ['🎯', '💡', '📚'];
+      recsList.forEach((text, i) => {
+        const boxClass = boxColors[i % boxColors.length];
+        const icon = boxIcons[i % boxIcons.length];
+        const card = document.createElement('div');
+        card.className = 'rec-mini-card';
+        card.innerHTML = `
+          <div class="rmc-icon-box ${boxClass}">${icon}</div>
+          <p class="rmc-text">${escapeHtml(text)}</p>
+        `;
+        recsContainer.appendChild(card);
+      });
+    }
+  }
 }
 
 // Fallback computation when /profile/analytics is not reached
@@ -7315,21 +7786,43 @@ async function fallbackComputeAndRenderAnalytics() {
   const avg = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length) : 0.0;
   const best = scores.length ? Math.max(...scores) : 0.0;
 
+  // Calculate authentic summed practice duration across completed sessions
+  let totalPracticeSeconds = 0;
+  userInterviews.forEach(i => {
+    if (i.duration_seconds != null && !isNaN(Number(i.duration_seconds))) {
+      totalPracticeSeconds += Number(i.duration_seconds);
+    } else if (typeof i.duration === 'string') {
+      const mMatch = i.duration.match(/(\d+)\s*m/);
+      const sMatch = i.duration.match(/(\d+)\s*s/);
+      const m = mMatch ? parseInt(mMatch[1], 10) : 0;
+      const s = sMatch ? parseInt(sMatch[1], 10) : 0;
+      totalPracticeSeconds += (m * 60) + s;
+    }
+  });
+  const totalHours = Math.floor(totalPracticeSeconds / 3600);
+  const totalMins = Math.floor((totalPracticeSeconds % 3600) / 60);
+  const durationFormatted = totalHours > 0 ? `${totalHours}h ${totalMins}m` : `${Math.max(total > 0 ? 1 : 0, totalMins)}m`;
+
   const data = {
     profile: {
       name: (userProfile && userProfile.name) || (currentUser && currentUser.full_name) || 'Candidate',
-      education: (userProfile && userProfile.education) || 'Degree Candidate',
+      education: (userProfile && userProfile.education) || '',
       college: (userProfile && userProfile.college) || '',
       is_verified: true
     },
     stats: {
       joined_date: 'Active',
       total_interviews: total,
-      total_practice_time: `${Math.round(total * 8)}m`,
+      total_practice_time: durationFormatted,
       overall_score: avg,
       avg_score: avg,
       best_score: best,
-      trends: { overall: '+0.0%', interviews: `${total} total`, time: `${Math.round(total * 8)}m`, avg: '+0.0%' }
+      trends: {
+        overall: total > 0 ? '+0.0%' : '--',
+        interviews: `${total} total`,
+        time: durationFormatted,
+        avg: total > 0 ? '+0.0%' : '--'
+      }
     },
     performance: {
       answer_quality: avg,
@@ -7347,8 +7840,20 @@ async function fallbackComputeAndRenderAnalytics() {
     trend_chart: {
       labels: userInterviews.slice(-5).map(i => i.completed_at ? i.completed_at.slice(5, 10) : 'Session'),
       your_scores: userInterviews.slice(-5).map(i => parseFloat(i.overall_score || 0)),
-      avg_scores: userInterviews.slice(-5).map(() => 75.0)
+      avg_scores: userInterviews.slice(-5).map(() => avg)
     },
+    insights: total === 0 ? [
+      "Complete your first technical mock interview to unlock AI-powered speech, visual, and answer analysis.",
+      "Upload your updated resume to receive personalized questions matching your actual projects and skills."
+    ] : [
+      "Consistent practice engagement recorded across your technical interview sessions."
+    ],
+    recommendations: total === 0 ? [
+      "Start with an interview in your target role to establish a baseline score.",
+      "Articulate your architectural thought process clearly during technical responses."
+    ] : [
+      "Review domain-specific concepts flagged in your individual interview feedback reports."
+    ],
     interviews: userInterviews.slice(0, 3).map(inv => ({
       id: inv.id,
       target_role: inv.target_role || 'Technical Interview',
@@ -7370,7 +7875,7 @@ function floatVal(v) {
    INTERACTIVE CANVAS CHARTS: RADAR & SCORE TREND
    ========================================================================== */
 
-function renderRadarChart(canvas, yourScores, avgScores) {
+function renderRadarChart(canvas, yourScores, avgScores, hasData = true) {
   if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -7395,7 +7900,7 @@ function renderRadarChart(canvas, yourScores, avgScores) {
     'Answer Quality',
     'Communication',
     'Visual Presence',
-    'Question Answering',
+    'Problem Solving',
     'Confidence'
   ];
   const numAxes = axes.length;
@@ -7451,6 +7956,15 @@ function renderRadarChart(canvas, yourScores, avgScores) {
     ctx.fillText(axes[i], lx, ly);
   }
 
+  if (!hasData) {
+    ctx.fillStyle = '#64748B';
+    ctx.font = '500 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Complete an interview to generate radar metrics', cx, cy);
+    ctx.restore();
+    return;
+  }
+
   // 3. Draw Average Score Polygon (Dashed light purple)
   ctx.beginPath();
   ctx.setLineDash([4, 4]);
@@ -7488,7 +8002,7 @@ function renderRadarChart(canvas, yourScores, avgScores) {
 
   for (let i = 0; i < numAxes; i++) {
     const angle = startAngle + i * angleStep;
-    const fraction = (yourScores[i] || 85) / 100;
+    const fraction = (yourScores[i] || 0) / 100;
     const x = cx + Math.cos(angle) * (radius * fraction);
     const y = cy + Math.sin(angle) * (radius * fraction);
     if (i === 0) ctx.moveTo(x, y);
@@ -7504,7 +8018,7 @@ function renderRadarChart(canvas, yourScores, avgScores) {
   ctx.lineWidth = 2;
   for (let i = 0; i < numAxes; i++) {
     const angle = startAngle + i * angleStep;
-    const fraction = (yourScores[i] || 85) / 100;
+    const fraction = (yourScores[i] || 0) / 100;
     const x = cx + Math.cos(angle) * (radius * fraction);
     const y = cy + Math.sin(angle) * (radius * fraction);
     ctx.beginPath();
@@ -7516,7 +8030,7 @@ function renderRadarChart(canvas, yourScores, avgScores) {
   ctx.restore();
 }
 
-function renderScoreTrendChart(canvas, labels, yourScores, avgScores) {
+function renderScoreTrendChart(canvas, labels, yourScores, avgScores, hasData = true) {
   if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -7561,6 +8075,15 @@ function renderScoreTrendChart(canvas, labels, yourScores, avgScores) {
   });
   ctx.setLineDash([]);
 
+  if (!hasData || !labels || labels.length === 0 || !yourScores || yourScores.length === 0) {
+    ctx.fillStyle = '#64748B';
+    ctx.font = '500 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No interview trend data in this timeframe', width / 2, height / 2);
+    ctx.restore();
+    return;
+  }
+
   const n = labels.length;
   const getX = (idx) => padLeft + (idx / Math.max(1, n - 1)) * chartW;
   const getY = (val) => padTop + chartH - (Math.min(100, Math.max(0, val)) / 100) * chartH;
@@ -7577,29 +8100,31 @@ function renderScoreTrendChart(canvas, labels, yourScores, avgScores) {
   });
 
   // 3. Draw Average Dashed Line (Purple)
-  ctx.beginPath();
-  ctx.setLineDash([5, 5]);
-  ctx.strokeStyle = '#A78BFA';
-  ctx.lineWidth = 2;
-
-  avgScores.forEach((val, idx) => {
-    const x = getX(idx);
-    const y = getY(val);
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Average dots
-  ctx.fillStyle = '#C4B5FD';
-  avgScores.forEach((val, idx) => {
-    const x = getX(idx);
-    const y = getY(val);
+  if (avgScores && avgScores.length > 0) {
     ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  });
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#A78BFA';
+    ctx.lineWidth = 2;
+
+    avgScores.forEach((val, idx) => {
+      const x = getX(idx);
+      const y = getY(val);
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Average dots
+    ctx.fillStyle = '#C4B5FD';
+    avgScores.forEach((val, idx) => {
+      const x = getX(idx);
+      const y = getY(val);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
 
   // 4. Draw Your Score Solid Line (Blue)
   ctx.beginPath();
@@ -7633,6 +8158,7 @@ function renderScoreTrendChart(canvas, labels, yourScores, avgScores) {
     const lastY = getY(yourScores[lastIdx]);
     const badge = document.getElementById('trend-callout-badge');
     if (badge) {
+      badge.style.display = 'inline-flex';
       badge.style.left = `${lastX - 24}px`;
       badge.style.top = `${lastY - 36}px`;
       badge.style.right = 'auto';
@@ -7673,7 +8199,11 @@ async function downloadProfileReportPDF() {
     const blobUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
-    link.download = `AI_Interview_Profile_Analytics_Sumit_Gounder.pdf`;
+    const candidateName = (cachedAnalyticsData && cachedAnalyticsData.profile && cachedAnalyticsData.profile.name)
+      || (currentUser && currentUser.full_name)
+      || 'Candidate';
+    const safeName = candidateName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    link.download = `AI_Interview_Profile_Analytics_${safeName}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -7727,7 +8257,7 @@ function initAPIHealthMonitor() {
 
   async function checkHealth() {
     try {
-      const res = await fetch(`${API_BASE_URL}/docs`, { method: 'HEAD', cache: 'no-cache' });
+      const res = await fetch(`${API_BASE_URL}/health`, { method: 'GET', cache: 'no-cache' });
       if (res.ok || res.status === 200 || res.status === 307) {
         if (badgeDot) {
           badgeDot.classList.remove('status-offline');
@@ -8263,6 +8793,7 @@ function closeMobileNav() {
 /* ==========================================================================
    STANDALONE CANDIDATE PROFILE PAGE LOGIC (#view-profile)
    ========================================================================== */
+
 async function initProfilePage() {
   if (!authToken) return;
 
@@ -8279,13 +8810,19 @@ async function initProfilePage() {
     }
   }
 
-  // 2. Populate Header & Identity Card
-  const userName = (currentUser && (currentUser.full_name || currentUser.name)) || (userProfile && userProfile.name) || 'Candidate';
+  // 2. Populate Header & Identity Card from authenticated data (no mock strings)
+  const userName = (currentUser && (currentUser.full_name || currentUser.name)) || (userProfile && userProfile.name) || (currentUser && currentUser.email ? currentUser.email.split('@')[0] : 'Candidate');
   const userEmail = (currentUser && currentUser.email) || 'candidate@example.com';
   const userRole = (userProfile && userProfile.target_role) || 'Software Engineer';
-  const userExp = (userProfile && userProfile.experience_type) || '1–3 Years';
+  const userExp = (userProfile && userProfile.experience_type) || 'Fresher';
   const userDiff = (userProfile && userProfile.interview_difficulty) || 'Intermediate';
-  const userEdu = (userProfile && userProfile.education) || 'Computer Applications';
+  const userEdu = (userProfile && userProfile.education) || '';
+  const userCollege = (userProfile && userProfile.college) || '';
+  const userYears = (userProfile && userProfile.years_of_experience !== undefined) ? parseFloat(userProfile.years_of_experience) : 0.0;
+  const userSkills = (userProfile && userProfile.skills) ? userProfile.skills : '';
+  const userLangs = (userProfile && userProfile.programming_languages) ? userProfile.programming_languages : '';
+  const userProjects = (userProfile && userProfile.projects) ? userProfile.projects : '';
+  const userAvatar = (userProfile && userProfile.avatar_url) ? userProfile.avatar_url : null;
 
   const nameDisp = document.getElementById('profile-page-name-display');
   if (nameDisp) nameDisp.textContent = userName;
@@ -8303,7 +8840,23 @@ async function initProfilePage() {
   if (diffDisp) diffDisp.textContent = userDiff;
 
   const eduDisp = document.getElementById('profile-page-edu-display');
-  if (eduDisp) eduDisp.textContent = userEdu;
+  if (eduDisp) {
+    if (userEdu && userCollege) eduDisp.textContent = `${userEdu} • ${userCollege}`;
+    else if (userEdu || userCollege) eduDisp.textContent = userEdu || userCollege;
+    else eduDisp.textContent = 'Not specified';
+  }
+
+  // Update Avatars
+  if (userAvatar) {
+    const profAvatar = document.getElementById('profile-page-avatar');
+    if (profAvatar) profAvatar.src = userAvatar;
+    const mainAvatar = document.getElementById('profile-avatar-img');
+    if (mainAvatar) mainAvatar.src = userAvatar;
+    const navMini = document.getElementById('nav-user-avatar-mini');
+    if (navMini) navMini.src = userAvatar;
+    const npmdAvatar = document.getElementById('npmd-avatar-img');
+    if (npmdAvatar) npmdAvatar.src = userAvatar;
+  }
 
   // 3. Populate Form inputs
   const inName = document.getElementById('prof-page-name');
@@ -8316,34 +8869,35 @@ async function initProfilePage() {
   if (inExp) inExp.value = userExp;
 
   const inYears = document.getElementById('prof-page-years-exp');
-  if (inYears) inYears.value = (userProfile && userProfile.years_of_experience !== undefined) ? userProfile.years_of_experience : 1.5;
+  if (inYears) inYears.value = userYears;
 
   const inDiff = document.getElementById('prof-page-difficulty');
   if (inDiff) inDiff.value = userDiff;
 
   const inSkills = document.getElementById('prof-page-skills');
-  if (inSkills) inSkills.value = (userProfile && userProfile.skills) ? userProfile.skills : '';
+  if (inSkills) inSkills.value = userSkills;
 
   const inLangs = document.getElementById('prof-page-languages');
-  if (inLangs) inLangs.value = (userProfile && userProfile.programming_languages) ? userProfile.programming_languages : '';
+  if (inLangs) inLangs.value = userLangs;
 
   const inProjects = document.getElementById('prof-page-projects');
-  if (inProjects) inProjects.value = (userProfile && userProfile.projects) ? userProfile.projects : '';
+  if (inProjects) inProjects.value = userProjects;
 
   const inEdu = document.getElementById('prof-page-education');
   if (inEdu) inEdu.value = userEdu;
 
   const inCollege = document.getElementById('prof-page-college');
-  if (inCollege) inCollege.value = (userProfile && userProfile.college) ? userProfile.college : 'Navgujarat BCA';
+  if (inCollege) inCollege.value = userCollege;
 
-  // 4. Populate Resume Information
-  const filename = (userProfile && userProfile.resume_filename) || (currentUploadedResume && currentUploadedResume.filename) || 'No resume uploaded yet';
+  // 4. Populate Attached Resume Information
+  const hasResume = !!(userProfile && userProfile.resume_filename);
+  const filename = hasResume ? userProfile.resume_filename : 'No resume uploaded yet';
   const fnameEl = document.getElementById('profile-attached-filename');
   if (fnameEl) fnameEl.textContent = filename;
 
   const resStatus = document.getElementById('profile-resume-status-badge');
   if (resStatus) {
-    if (userProfile && userProfile.resume_filename) {
+    if (hasResume) {
       resStatus.textContent = 'Active & Parsed';
       resStatus.className = 'badge badge-success-subtle';
     } else {
@@ -8352,15 +8906,85 @@ async function initProfilePage() {
     }
   }
 
-  // Populate Skills cloud tags
-  renderProfileSkillsCloud(userProfile && userProfile.skills ? userProfile.skills : '');
+  const attachedActions = document.getElementById('profile-attached-actions');
+  if (attachedActions) {
+    if (hasResume) {
+      attachedActions.style.display = 'flex';
+      attachedActions.classList.remove('hidden');
+    } else {
+      attachedActions.style.display = 'none';
+      attachedActions.classList.add('hidden');
+    }
+  }
 
-  // 5. Bind Form Submission
+  // Bind Remove Resume button
+  const removeResumeBtn = document.getElementById('btn-remove-attached-resume');
+  if (removeResumeBtn && !removeResumeBtn._bound) {
+    removeResumeBtn._bound = true;
+    removeResumeBtn.onclick = async () => {
+      if (!confirm('Are you sure you want to remove your attached resume?')) return;
+      try {
+        const delRes = await fetch(`${API_BASE_URL}/profile/resume`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        if (!delRes.ok) {
+          const err = await delRes.json().catch(() => ({}));
+          throw new Error(err.detail || 'Failed to remove resume');
+        }
+        const data = await delRes.json();
+        userProfile = data.profile || data;
+        showToast('Attached resume removed successfully.', 'success');
+        initProfilePage();
+        updateDashboardStats();
+      } catch (err) {
+        showToast(`Error removing resume: ${err.message}`, 'error');
+      }
+    };
+  }
+
+  // Bind Change Avatar button
+  const changeAvatarBtn = document.getElementById('btn-change-avatar');
+  const avatarFileInput = document.getElementById('profile-avatar-file-input');
+  if (changeAvatarBtn && avatarFileInput && !changeAvatarBtn._bound) {
+    changeAvatarBtn._bound = true;
+    changeAvatarBtn.onclick = () => avatarFileInput.click();
+    avatarFileInput.onchange = async (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        await handleProfileAvatarUpload(e.target.files[0]);
+        e.target.value = '';
+      }
+    };
+  }
+
+  // Populate Skills & Languages cloud tags
+  renderProfileSkillsCloud(userSkills, userLangs);
+
+  // 5. Bind Form Submission with Full Validation
   const form = document.getElementById('profile-page-form');
   if (form && !form._bound) {
     form._bound = true;
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      const nameVal = document.getElementById('prof-page-name')?.value.trim();
+      if (!nameVal) {
+        showToast('Please enter your full name.', 'warning');
+        return;
+      }
+
+      const yearsVal = parseFloat(document.getElementById('prof-page-years-exp')?.value);
+      if (isNaN(yearsVal) || yearsVal < 0 || yearsVal > 50) {
+        showToast('Years of experience must be a valid number between 0 and 50.', 'warning');
+        return;
+      }
+
+      const diffVal = document.getElementById('prof-page-difficulty')?.value;
+      if (!['Beginner', 'Intermediate', 'Advanced'].includes(diffVal)) {
+        showToast('Please select a valid interview difficulty level.', 'warning');
+        return;
+      }
+
       const saveBtn = document.getElementById('btn-save-profile-page');
       if (saveBtn) {
         saveBtn.disabled = true;
@@ -8368,11 +8992,11 @@ async function initProfilePage() {
       }
 
       const payload = {
-        name: document.getElementById('prof-page-name')?.value.trim() || userName,
-        target_role: document.getElementById('prof-page-target-role')?.value || userRole,
-        experience_type: document.getElementById('prof-page-exp-type')?.value || userExp,
-        years_of_experience: parseFloat(document.getElementById('prof-page-years-exp')?.value) || 0.0,
-        interview_difficulty: document.getElementById('prof-page-difficulty')?.value || userDiff,
+        name: nameVal,
+        target_role: document.getElementById('prof-page-target-role')?.value.trim() || 'Software Engineer',
+        experience_type: document.getElementById('prof-page-exp-type')?.value || 'Fresher',
+        years_of_experience: yearsVal,
+        interview_difficulty: diffVal,
         skills: document.getElementById('prof-page-skills')?.value.trim() || '',
         programming_languages: document.getElementById('prof-page-languages')?.value.trim() || '',
         projects: document.getElementById('prof-page-projects')?.value.trim() || '',
@@ -8387,9 +9011,13 @@ async function initProfilePage() {
           body: JSON.stringify(payload)
         });
         if (!res.ok) {
-          throw new Error(`Profile update failed (${res.status})`);
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `Profile update failed (${res.status})`);
         }
         userProfile = await res.json();
+        if (currentUser) {
+          currentUser.full_name = payload.name;
+        }
         showToast('Candidate Profile saved successfully!', 'success');
         updateAuthWidget();
         initProfilePage();
@@ -8405,11 +9033,15 @@ async function initProfilePage() {
     });
   }
 
-  // Bind Reset button
+  // Bind Reset Changes button (Restores last saved DB values, not arbitrary defaults)
   const resetBtn = document.getElementById('btn-reset-profile-page');
   if (resetBtn && !resetBtn._bound) {
     resetBtn._bound = true;
-    resetBtn.onclick = () => initProfilePage();
+    resetBtn.onclick = async () => {
+      userProfile = await loadUserProfile();
+      initProfilePage();
+      showToast('Profile form restored to last saved state.', 'info');
+    };
   }
 
   // 6. Bind Drag and Drop Resume in Profile Page
@@ -8421,6 +9053,7 @@ async function initProfilePage() {
     fileInput.addEventListener('change', async (e) => {
       if (e.target.files && e.target.files.length > 0) {
         await handleProfilePageResumeUpload(e.target.files[0]);
+        e.target.value = '';
       }
     });
 
@@ -8448,30 +9081,89 @@ async function initProfilePage() {
     });
   }
 
-  // 7. Bind Back and Analytics navigation buttons
+  // 7. Bind Navigation and Redirection buttons
   const backBtn = document.getElementById('btn-profile-back-dash');
   if (backBtn) backBtn.onclick = () => navigateToView('dashboard');
 
   const toAnalyticsBtn = document.getElementById('btn-profile-to-analytics');
   if (toAnalyticsBtn) toAnalyticsBtn.onclick = () => navigateToView('analytics');
+
+  const profStartInterviewBtn = document.getElementById('btn-profile-start-interview');
+  if (profStartInterviewBtn) profStartInterviewBtn.onclick = () => openInterviewSetup();
 }
 
-function renderProfileSkillsCloud(skillsString) {
+function renderProfileSkillsCloud(skillsString, langsString) {
   const container = document.getElementById('profile-page-skills-tags');
   if (!container) return;
 
-  if (!skillsString || !skillsString.trim()) {
-    container.innerHTML = '<span class="tag-pill tag-muted">Upload a resume to auto-detect skills</span>';
+  const langsArr = (langsString || '').split(',').map(s => s.trim()).filter(Boolean);
+  const skillsArr = (skillsString || '').split(',').map(s => s.trim()).filter(Boolean);
+
+  if (langsArr.length === 0 && skillsArr.length === 0) {
+    container.innerHTML = '<span class="tag-pill tag-muted">Upload a resume or enter skills to populate tags</span>';
     return;
   }
 
-  const skillsArr = skillsString.split(',').map(s => s.trim()).filter(Boolean);
-  if (skillsArr.length === 0) {
-    container.innerHTML = '<span class="tag-pill tag-muted">No skills detected</span>';
+  let html = '';
+  // Distinct Blue pill badges for programming languages
+  langsArr.forEach(l => {
+    html += `<span class="tag-pill tag-pill-language" title="Programming Language">${escapeHtml(l)}</span>`;
+  });
+  // Distinct Violet pill badges for technical skills
+  skillsArr.forEach(s => {
+    html += `<span class="tag-pill tag-pill-skill" title="Technical Skill">${escapeHtml(s)}</span>`;
+  });
+
+  container.innerHTML = html;
+}
+
+async function handleProfileAvatarUpload(file) {
+  if (!file) return;
+  const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+  if (!validTypes.includes(file.type.toLowerCase())) {
+    showToast('Invalid image type. Please select a PNG, JPG, or WebP file.', 'warning');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Image file too large. Maximum size is 5MB.', 'warning');
     return;
   }
 
-  container.innerHTML = skillsArr.map(s => `<span class="tag-pill">${escapeHtml(s)}</span>`).join('');
+  showToast('Uploading profile avatar...', 'info');
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_BASE_URL}/profile/avatar`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Avatar upload failed (${res.status})`);
+    }
+
+    const data = await res.json();
+    if (userProfile) {
+      userProfile.avatar_url = data.avatar_url;
+    }
+
+    const profAvatar = document.getElementById('profile-page-avatar');
+    if (profAvatar) profAvatar.src = data.avatar_url;
+    const mainAvatar = document.getElementById('profile-avatar-img');
+    if (mainAvatar) mainAvatar.src = data.avatar_url;
+    const navMini = document.getElementById('nav-user-avatar-mini');
+    if (navMini) navMini.src = data.avatar_url;
+    const npmdAvatar = document.getElementById('npmd-avatar-img');
+    if (npmdAvatar) npmdAvatar.src = data.avatar_url;
+
+    showToast('Profile avatar updated successfully!', 'success');
+  } catch (err) {
+    showToast(`Avatar upload error: ${err.message}`, 'error');
+  }
 }
 
 async function handleProfilePageResumeUpload(file) {
@@ -8482,11 +9174,26 @@ async function handleProfilePageResumeUpload(file) {
     showToast(`Invalid file type (${ext}). Please upload a .pdf, .docx, or .txt file.`, 'warning');
     return;
   }
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('Resume file is too large. Maximum size is 10MB.', 'warning');
+    return;
+  }
 
   const idle = document.getElementById('prd-idle-content');
   const loading = document.getElementById('prd-loading-content');
   if (idle) idle.classList.add('hidden');
   if (loading) loading.classList.remove('hidden');
+
+  const banner = document.getElementById('profile-parsing-status-banner');
+  if (banner) {
+    banner.classList.remove('hidden');
+    banner.innerHTML = `
+      <div class="banner-loading">
+        <span style="display:inline-block;animation:spin 1s linear infinite">⏳</span>
+        <span>Extracting skills, languages, and technical experience with AI parser...</span>
+      </div>
+    `;
+  }
 
   try {
     const formData = new FormData();
@@ -8504,18 +9211,32 @@ async function handleProfilePageResumeUpload(file) {
     }
 
     const data = await res.json();
-    showToast(`Resume "${data.filename}" uploaded and parsed!`, 'success');
+    userProfile = data.profile;
 
-    if (userProfile) {
-      userProfile.resume_filename = data.filename;
-      userProfile.parsed_resume = data.parsed_resume;
-      if (data.parsed_resume && data.parsed_resume.skills) {
-        userProfile.skills = data.parsed_resume.skills.join(', ');
-      }
+    const detectedSkills = (data.parsed_resume && data.parsed_resume.skills) ? data.parsed_resume.skills.length : 0;
+    const detectedLangs = (data.parsed_resume && data.parsed_resume.programming_languages) ? data.parsed_resume.programming_languages.length : 0;
+
+    if (banner) {
+      banner.innerHTML = `
+        <div class="banner-success">
+          <span>✓</span>
+          <span>Resume "<strong>${escapeHtml(data.filename)}</strong>" parsed successfully: ${detectedSkills} technical skills and ${detectedLangs} languages extracted.</span>
+        </div>
+      `;
     }
 
+    showToast(`Resume "${data.filename}" uploaded and parsed successfully!`, 'success');
     initProfilePage();
+    updateDashboardStats();
   } catch (err) {
+    if (banner) {
+      banner.innerHTML = `
+        <div class="banner-error">
+          <span>✕</span>
+          <span>Resume parsing failed: ${escapeHtml(err.message)}</span>
+        </div>
+      `;
+    }
     showToast(`Resume upload error: ${err.message}`, 'error');
   } finally {
     if (loading) loading.classList.add('hidden');
@@ -8526,9 +9247,13 @@ async function handleProfilePageResumeUpload(file) {
 /* ==========================================================================
    STANDALONE PERFORMANCE ANALYTICS PAGE LOGIC (#view-analytics)
    ========================================================================== */
+
 function initAnalyticsPage() {
   const backBtn = document.getElementById('btn-analytics-back-dash');
   if (backBtn) backBtn.onclick = () => navigateToView('dashboard');
+
+  const toProfileBtn = document.getElementById('btn-analytics-to-profile');
+  if (toProfileBtn) toProfileBtn.onclick = () => navigateToView('profile');
 
   initProfileAnalyticsPage();
 }

@@ -9,8 +9,8 @@ def run():
             print("Starting uvicorn server...")
             proc = subprocess.Popen(cmd)
             proc.wait()
-            print(f"Uvicorn exited with code {proc.returncode}. Restarting in 1s...")
-            time.sleep(1)
+            print(f"Uvicorn exited with code {proc.returncode}. Restarting in 3s...")
+            time.sleep(3)
         except KeyboardInterrupt:
             break
         except Exception as e:

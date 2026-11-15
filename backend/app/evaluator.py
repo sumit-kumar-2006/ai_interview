@@ -12,6 +12,7 @@ from sentence_transformers import SentenceTransformer
 from backend.app.services.llm_provider import llm_provider
 from nlp.answer_analyzer import extract_key_concepts, normalize_word, STOP_WORDS, get_embedding_model
 from nlp.contradiction_detector import contradiction_detector
+from ml.rubric_utils import compute_concept_coverage, compute_keyword_alignment, compute_technical_depth
 
 logger = logging.getLogger(__name__)
 
@@ -598,18 +599,24 @@ Return STRICT JSON object with EXACT keys:
 
     def _calc_rf_informational(self, question: str, candidate_answer: str, question_similarity: float) -> Optional[float]:
         """
-        Runs the audited RandomForest model as an informational feature.
-        Feature order in model: ['semantic_similarity', 'question_length', 'answer_length'].
-        Note: The model was fitted with 'semantic_similarity' representing question-to-answer similarity in [0, 1].
+        Runs the multi-criteria RandomForest model as an informational feature.
+        Feature order in model: ['semantic_similarity', 'question_length', 'answer_length', 'concept_coverage', 'keyword_alignment', 'technical_depth'].
         """
         if self.scoring_model is None or not candidate_answer.strip():
             return None
 
         try:
+            cov = compute_concept_coverage(question, candidate_answer)
+            align = compute_keyword_alignment(question, candidate_answer)
+            depth = compute_technical_depth(candidate_answer)
+
             features_df = pd.DataFrame([{
                 "semantic_similarity": max(0.0, min(1.0, float(question_similarity) / 100.0)),
                 "question_length": len(question),
-                "answer_length": len(candidate_answer.strip())
+                "answer_length": len(candidate_answer.strip()),
+                "concept_coverage": cov,
+                "keyword_alignment": align,
+                "technical_depth": depth
             }])
             raw_pred = self.scoring_model.predict(features_df)[0]
             return round(max(0.0, min(100.0, float(raw_pred))), 2)

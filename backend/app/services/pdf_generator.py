@@ -968,10 +968,15 @@ def render_profile_analytics_pdf(analytics_data: Dict[str, Any]) -> bytes:
 
     user_name = html.escape(str(profile.get("name") or user.get("full_name") or "Candidate"))
     user_email = html.escape(str(user.get("email") or "candidate@platform.ai"))
-    user_edu = html.escape(str(profile.get("education") or "BCA Student"))
-    user_college = html.escape(str(profile.get("college") or "Navgujarat BCA"))
-    subtitle = f"{user_edu} • {user_college}" if user_college else user_edu
-    joined_date = str(stats.get("joined_date") or "Nov 2025")
+    user_edu = html.escape(str(profile.get("education") or ""))
+    user_college = html.escape(str(profile.get("college") or ""))
+    if user_edu and user_college:
+        subtitle = f"{user_edu} • {user_college}"
+    elif user_edu or user_college:
+        subtitle = user_edu or user_college
+    else:
+        subtitle = html.escape(str(profile.get("target_role") or "Software Engineer"))
+    joined_date = str(stats.get("joined_date") or "Active Member")
     total_interviews = stats.get("total_interviews", 0)
     best_score = f"{float(stats.get('best_score', 0.0)):.1f}%"
     avg_score = f"{float(stats.get('avg_score', 0.0)):.1f}%"

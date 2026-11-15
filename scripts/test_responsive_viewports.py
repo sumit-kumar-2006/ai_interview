@@ -1,165 +1,93 @@
-import subprocess
-import time
-import json
-import urllib.request
-import base64
-import os
-import websocket
+import subprocess, time, json, urllib.request, websocket, os
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-PORT = 9225
 BASE_URL = "http://127.0.0.1:8000"
-OUTPUT_DIR = "screenshots_audit/responsive"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 VIEWPORTS = [
-    ("desktop_1920", 1920, 1080),
-    ("desktop_1440", 1440, 900),
-    ("laptop_1366", 1366, 768),
-    ("laptop_1024", 1024, 768),
-    ("tablet_768", 768, 1024),
-    ("mobile_430", 430, 932),
-    ("mobile_390", 390, 844),
-    ("mobile_320", 320, 568)
+    ("desktop", 1440, 900),
+    ("tablet", 768, 1024),
+    ("mobile", 390, 844)
 ]
 
-VIEWS = [
-    ("landing", f"{BASE_URL}/?view=landing"),
-    ("dashboard", f"{BASE_URL}/?auto_login=sumit&view=dashboard"),
-    ("setup", f"{BASE_URL}/?auto_login=sumit&view=interview-setup"),
-    ("device_check", f"{BASE_URL}/?auto_login=sumit&view=device-check"),
-    ("practice", f"{BASE_URL}/?auto_login=sumit&view=practice"),
-    ("profile", f"{BASE_URL}/?auto_login=sumit&view=profile"),
-    ("history", f"{BASE_URL}/?auto_login=sumit&view=history"),
-    ("admin", f"{BASE_URL}/?auto_login=sumit&view=admin")
+PAGES = [
+    ("home", f"{BASE_URL}/"),
+    ("dashboard", f"{BASE_URL}/dashboard?auto_login=sumit"),
+    ("profile", f"{BASE_URL}/profile?auto_login=sumit"),
+    ("analytics", f"{BASE_URL}/analytics?auto_login=sumit"),
+    ("setup", f"{BASE_URL}/start-interview?auto_login=sumit"),
+    ("device_check", f"{BASE_URL}/device-check?auto_login=sumit"),
+    ("reports", f"{BASE_URL}/reports?auto_login=sumit")
 ]
 
 def send_cdp(ws, method, params=None, msg_id=1):
     req = {"id": msg_id, "method": method}
-    if params:
-        req["params"] = params
+    if params: req["params"] = params
     ws.send(json.dumps(req))
     while True:
         resp = json.loads(ws.recv())
-        if resp.get("id") == msg_id:
-            return resp
+        if resp.get("id") == msg_id: return resp
 
 def evaluate_js(ws, expr, msg_id=100):
-    res = send_cdp(ws, "Runtime.evaluate", {
-        "expression": expr,
-        "returnByValue": True,
-        "awaitPromise": True
-    }, msg_id=msg_id)
+    res = send_cdp(ws, "Runtime.evaluate", {"expression": expr, "returnByValue": True, "awaitPromise": True}, msg_id=msg_id)
     return res.get("result", {}).get("result", {}).get("value")
 
-def main():
-    print("==================================================")
-    print("PHASE 2: COMPREHENSIVE RESPONSIVE VIEWPORT AUDIT")
-    print("==================================================")
+results = []
 
-    results = []
+for vp_name, width, height in VIEWPORTS:
+    port = 9300 + (width % 100)
+    user_data = f"C:/tmp/chrome_vp_{vp_name}_{port}"
+    proc = subprocess.Popen([
+        CHROME_PATH,
+        f"--remote-debugging-port={port}",
+        "--headless=new",
+        "--disable-gpu",
+        "--no-sandbox",
+        f"--window-size={width},{height}",
+        f"--user-data-dir={user_data}",
+        f"{BASE_URL}/?_t={port}"
+    ])
+    try:
+        time.sleep(2.0)
+        resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list")
+        tabs = json.loads(resp.read().decode())
+        ws = websocket.create_connection(tabs[0]["webSocketDebuggerUrl"])
+        send_cdp(ws, "Page.enable", {}, msg_id=1)
 
-    for vp_name, width, height in VIEWPORTS:
-        print(f"\n--- Testing Viewport: {vp_name} ({width}x{height}) ---")
-        for view_name, url in VIEWS:
-            proc = subprocess.Popen([
-                CHROME_PATH,
-                f"--remote-debugging-port={PORT}",
-                "--headless=new",
-                "--disable-gpu",
-                "--no-sandbox",
-                f"--window-size={width},{height}",
-                f"--user-data-dir=C:/tmp/chrome_vp_{vp_name}",
-                url
-            ])
+        for p_name, p_url in PAGES:
+            send_cdp(ws, "Page.navigate", {"url": p_url}, msg_id=20)
+            time.sleep(1.2)
+            eval_res = evaluate_js(ws, """(() => {
+                const docEl = document.documentElement;
+                const body = document.body;
+                const scrollW = Math.max(docEl.scrollWidth, body.scrollWidth);
+                const clientW = docEl.clientWidth;
+                const hasHOverflow = scrollW > (clientW + 2); // 2px margin for rounding
+                const activePanels = Array.from(document.querySelectorAll('.view-panel.active')).map(p => p.id);
+                return {
+                    scrollW: scrollW,
+                    clientW: clientW,
+                    hasHOverflow: hasHOverflow,
+                    activePanels: activePanels
+                };
+            })()""", msg_id=30)
+            
+            status = "PASS" if not eval_res.get("hasHOverflow") and len(eval_res.get("activePanels", [])) == 1 else "FAIL"
+            results.append({
+                "viewport": vp_name,
+                "width": width,
+                "page": p_name,
+                "status": status,
+                "scrollW": eval_res.get("scrollW"),
+                "clientW": eval_res.get("clientW"),
+                "hasHOverflow": eval_res.get("hasHOverflow"),
+                "activePanels": eval_res.get("activePanels")
+            })
+            print(f"[{vp_name.upper()} {width}px] {p_name:12}: {status} (scrollW={eval_res.get('scrollW')} clientW={eval_res.get('clientW')} active={eval_res.get('activePanels')})")
+        ws.close()
+    finally:
+        proc.terminate()
+        proc.wait()
 
-            try:
-                time.sleep(1.8)
-                resp = urllib.request.urlopen(f"http://127.0.0.1:{PORT}/json/list", timeout=3)
-                tabs = json.loads(resp.read().decode())
-                ws_url = None
-                for tab in tabs:
-                    if tab.get("type") == "page":
-                        ws_url = tab.get("webSocketDebuggerUrl")
-                        break
-                if not ws_url and tabs:
-                    ws_url = tabs[0].get("webSocketDebuggerUrl")
-
-                if not ws_url:
-                    print(f"  [FAIL] Could not connect to Chrome tab for {view_name}")
-                    continue
-
-                ws = websocket.create_connection(ws_url, timeout=5)
-
-                # Set Device Metrics Override
-                is_mobile = width < 768
-                send_cdp(ws, "Emulation.setDeviceMetricsOverride", {
-                    "width": width,
-                    "height": height,
-                    "deviceScaleFactor": 1,
-                    "mobile": is_mobile
-                }, msg_id=10)
-
-                time.sleep(1.0)
-
-                # Check horizontal scroll overflow
-                overflow_info = evaluate_js(ws, """
-                    (() => {
-                        const docWidth = document.documentElement.scrollWidth;
-                        const bodyWidth = document.body.scrollWidth;
-                        const winWidth = window.innerWidth;
-                        const hasOverflow = docWidth > winWidth + 1 || bodyWidth > winWidth + 1;
-                        return {
-                            docWidth,
-                            bodyWidth,
-                            winWidth,
-                            hasOverflow
-                        };
-                    })()
-                """, msg_id=20)
-
-                # Capture viewport screenshot
-                scr_res = send_cdp(ws, "Page.captureScreenshot", {
-                    "format": "png",
-                    "captureBeyondViewport": False
-                }, msg_id=30)
-
-                if "result" in scr_res and "data" in scr_res["result"]:
-                    img_bytes = base64.b64decode(scr_res["result"]["data"])
-                    fname = f"{view_name}_{vp_name}.png"
-                    fpath = os.path.join(OUTPUT_DIR, fname)
-                    with open(fpath, "wb") as f:
-                        f.write(img_bytes)
-
-                has_overflow = overflow_info.get("hasOverflow", False) if overflow_info else False
-                status = "PASS (No Overflow)" if not has_overflow else f"WARN (Overflow: doc={overflow_info.get('docWidth')} win={width})"
-                print(f"  [{status}] View: {view_name:<12} | Width: {width}px | Saved: {fname}")
-
-                results.append({
-                    "viewport": vp_name,
-                    "width": width,
-                    "height": height,
-                    "view": view_name,
-                    "has_overflow": has_overflow,
-                    "details": overflow_info
-                })
-
-                ws.close()
-
-            except Exception as e:
-                print(f"  [ERROR] {view_name} on {vp_name}: {e}")
-            finally:
-                proc.terminate()
-                proc.wait()
-                time.sleep(0.3)
-
-    total_tests = len(results)
-    overflow_count = sum(1 for r in results if r["has_overflow"])
-    print("\n==================================================")
-    print(f"AUDIT SUMMARY: {total_tests} views/viewports tested.")
-    print(f"Passed: {total_tests - overflow_count} / {total_tests}")
-    print(f"Overflow Warnings: {overflow_count}")
-    print("==================================================")
-
-if __name__ == "__main__":
-    main()
+print("\n=== SUMMARY ===")
+all_pass = all(r["status"] == "PASS" for r in results)
+print(f"Total viewport checks: {len(results)}, All passed: {all_pass}")

@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Response, Form, Request
 from sqlalchemy.orm import Session, joinedload
 import os
 
@@ -18,12 +18,17 @@ from backend.app.services.pdf_generator import render_profile_analytics_pdf
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
-@router.get("", response_model=UserProfileResponse)
+@router.get("", response_model=Optional[UserProfileResponse])
 def get_user_profile(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
-    """Retrieve current candidate's profile. Creates default profile if missing."""
+    """Retrieve current candidate's profile."""
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
     profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
     
     if not profile:
@@ -35,14 +40,15 @@ def get_user_profile(
             experience_type="Fresher",
             years_of_experience=0.0,
             target_role="Software Engineer",
-            skills="Python, JavaScript, SQL",
-            programming_languages="Python, JavaScript",
+            skills="",
+            programming_languages="",
             projects="",
             resume_text="",
             resume_filename=None,
             parsed_resume=None,
             job_description="",
-            interview_difficulty="Intermediate"
+            interview_difficulty="Intermediate",
+            avatar_url=None
         )
         db.add(profile)
         db.commit()
@@ -56,7 +62,7 @@ def update_user_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create or update current candidate's profile."""
+    """Create or update current candidate's profile with validation and user sync."""
     profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
 
     update_data = profile_in.model_dump(exclude_unset=True)
@@ -71,6 +77,56 @@ def update_user_profile(
         for field, value in update_data.items():
             setattr(profile, field, value)
 
+    # Sync full_name back to user record if provided
+    if "name" in update_data and update_data["name"]:
+        current_user.full_name = update_data["name"].strip()
+        db.add(current_user)
+
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.post("/avatar", response_model=UserProfileResponse)
+async def upload_avatar(
+    file: Optional[UploadFile] = File(None),
+    avatar_url: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload custom candidate avatar or select a preset avatar URL."""
+    profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
+    if not profile:
+        profile = UserProfile(
+            user_id=current_user.id,
+            name=current_user.full_name or current_user.email.split('@')[0]
+        )
+        db.add(profile)
+        db.flush()
+
+    if file and file.filename:
+        ext = os.path.splitext(file.filename.lower())[1]
+        if ext not in [".png", ".jpg", ".jpeg", ".webp"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported image format '{ext}'. Please upload a PNG, JPG, or WebP."
+            )
+        img_bytes = await file.read()
+        if len(img_bytes) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Avatar image exceeds maximum 5MB size."
+            )
+        os.makedirs("uploads/avatars", exist_ok=True)
+        safe_img_name = sanitize_filename(file.filename)
+        saved_name = f"user_{current_user.id}_{int(datetime.utcnow().timestamp())}_{safe_img_name}"
+        disk_path = os.path.join("uploads", "avatars", saved_name)
+        with open(disk_path, "wb") as f:
+            f.write(img_bytes)
+        profile.avatar_url = f"/uploads/avatars/{saved_name}"
+    elif avatar_url:
+        profile.avatar_url = avatar_url.strip()
+
     db.commit()
     db.refresh(profile)
     return profile
@@ -79,12 +135,14 @@ def update_user_profile(
 @router.post("/resume", response_model=ResumeUploadResponse)
 async def upload_resume(
     file: UploadFile = File(...),
+    overwrite: bool = Query(False, description="Whether to overwrite existing manual fields"),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Upload and intelligently analyze candidate resume (PDF, DOCX, TXT).
-    Extracts skills, projects, experience, education, certifications, and updates candidate profile.
+    Extracts skills, projects, experience, education, and updates candidate profile
+    without overwriting manual edits unless explicitly requested.
     """
     if not file.filename:
         raise HTTPException(
@@ -123,6 +181,20 @@ async def upload_resume(
     safe_name = sanitize_filename(file.filename)
     skills_str = parsed_data.get("skills_text") or (", ".join(parsed_data["skills"]) if isinstance(parsed_data.get("skills"), list) else str(parsed_data.get("skills") or ""))
 
+    # Save physical file to disk
+    os.makedirs("uploads/resumes", exist_ok=True)
+    user_prefix = f"user_{current_user.id}" if current_user else "guest"
+    timestamp_prefix = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    saved_disk_name = f"{user_prefix}_{timestamp_prefix}_{safe_name}"
+    disk_path = os.path.join("uploads", "resumes", saved_disk_name)
+    try:
+        with open(disk_path, "wb") as f:
+            f.write(file_bytes)
+        parsed_data["stored_file_path"] = disk_path
+        parsed_data["file_url"] = f"/uploads/resumes/{saved_disk_name}"
+    except Exception as e:
+        print(f"Warning: Failed to save resume to disk: {e}")
+
     # Persist to database if authenticated
     if current_user:
         profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
@@ -144,22 +216,53 @@ async def upload_resume(
             )
             db.add(profile)
         else:
-            if parsed_data.get("candidate_name") and (not profile.name or profile.name == "Candidate"):
-                profile.name = parsed_data.get("candidate_name")
-            if parsed_data.get("target_role"):
-                profile.target_role = parsed_data.get("target_role")
-            if skills_str:
-                profile.skills = skills_str
-            if parsed_data.get("programming_languages"):
-                profile.programming_languages = parsed_data.get("programming_languages")
-            if parsed_data.get("projects_summary"):
-                profile.projects = parsed_data.get("projects_summary")
-            if parsed_data.get("education_summary"):
-                profile.education = parsed_data.get("education_summary")
-            if parsed_data.get("experience_type"):
-                profile.experience_type = parsed_data.get("experience_type")
-            if parsed_data.get("years_of_experience") is not None:
-                profile.years_of_experience = parsed_data.get("years_of_experience")
+            if overwrite:
+                if parsed_data.get("candidate_name"):
+                    profile.name = parsed_data.get("candidate_name")
+                if parsed_data.get("target_role"):
+                    profile.target_role = parsed_data.get("target_role")
+                if skills_str:
+                    profile.skills = skills_str
+                if parsed_data.get("programming_languages"):
+                    profile.programming_languages = parsed_data.get("programming_languages")
+                if parsed_data.get("projects_summary"):
+                    profile.projects = parsed_data.get("projects_summary")
+                if parsed_data.get("education_summary"):
+                    profile.education = parsed_data.get("education_summary")
+                if parsed_data.get("experience_type"):
+                    profile.experience_type = parsed_data.get("experience_type")
+                if parsed_data.get("years_of_experience") is not None:
+                    profile.years_of_experience = parsed_data.get("years_of_experience")
+            else:
+                # Non-destructive merge: preserve existing user edits
+                if not profile.name or profile.name in ["Candidate", ""]:
+                    if parsed_data.get("candidate_name"):
+                        profile.name = parsed_data.get("candidate_name")
+                if not profile.target_role:
+                    profile.target_role = parsed_data.get("target_role") or "Software Engineer"
+                
+                # Merge technical skills non-destructively
+                existing_skills = [s.strip() for s in (profile.skills or "").split(",") if s.strip()]
+                new_skills = parsed_data.get("skills", [])
+                merged_skills = list(dict.fromkeys(existing_skills + new_skills))
+                profile.skills = ", ".join(merged_skills)
+
+                # Merge programming languages non-destructively
+                existing_langs = [l.strip() for l in (profile.programming_languages or "").split(",") if l.strip()]
+                new_langs = [l.strip() for l in (parsed_data.get("programming_languages") or "").split(",") if l.strip()]
+                merged_langs = list(dict.fromkeys(existing_langs + new_langs))
+                profile.programming_languages = ", ".join(merged_langs)
+
+                if not profile.education and parsed_data.get("education_summary"):
+                    profile.education = parsed_data.get("education_summary")
+                if not profile.projects and parsed_data.get("projects_summary"):
+                    profile.projects = parsed_data.get("projects_summary")
+                if (profile.years_of_experience is None or profile.years_of_experience == 0.0) and parsed_data.get("years_of_experience"):
+                    profile.years_of_experience = parsed_data.get("years_of_experience")
+                if not profile.experience_type or profile.experience_type in ["Fresher", ""]:
+                    if parsed_data.get("experience_type"):
+                        profile.experience_type = parsed_data.get("experience_type")
+
             profile.resume_text = parsed_data.get("raw_text")
             profile.resume_filename = safe_name
             profile.parsed_resume = parsed_data
@@ -168,7 +271,6 @@ async def upload_resume(
         db.refresh(profile)
     else:
         # Ephemeral profile for guest user
-        from datetime import datetime
         profile = UserProfile(
             id=0,
             user_id=0,
@@ -199,8 +301,38 @@ async def upload_resume(
     }
 
 
+@router.delete("/resume", response_model=UserProfileResponse)
+def remove_resume(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Remove attached resume from candidate's profile."""
+    profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
+    if not profile or not profile.resume_filename:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No attached resume found to remove."
+        )
+
+    # Attempt to remove disk file if stored
+    if profile.parsed_resume and isinstance(profile.parsed_resume, dict):
+        disk_path = profile.parsed_resume.get("stored_file_path")
+        if disk_path and os.path.exists(disk_path):
+            try:
+                os.remove(disk_path)
+            except Exception:
+                pass
+
+    profile.resume_filename = None
+    profile.resume_text = None
+    profile.parsed_resume = None
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
 def _build_analytics_payload(current_user: User, profile: Optional[UserProfile], interviews: List[Interview], days: Optional[int] = None) -> Dict[str, Any]:
-    """Helper to assemble structured analytics response for JSON API and PDF export."""
+    """Assemble authentic analytics calculated exclusively from user's actual interview sessions."""
     total_count = len(interviews)
     total_seconds = sum(i.duration_seconds or 0 for i in interviews)
     hours = int(total_seconds // 3600)
@@ -212,13 +344,15 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
     best_score = round(max(scores), 1) if scores else 0.0
     latest_score = round(scores[0], 1) if scores else 0.0
 
-    # Overall score derived from genuine completed interviews (matching Dashboard & Reports)
+    # Overall score derived from genuine completed interviews
     overall_score = avg_score if total_count > 0 else 0.0
 
     # Extract metrics from actual QuestionResults across user's sessions
     comm_scores = []
     rel_scores = []
     tech_scores = []
+    visual_scores = []
+    
     for inv in interviews:
         if inv.technical_score is not None:
             tech_scores.append(float(inv.technical_score))
@@ -233,13 +367,20 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
                 rel_scores.append(float(qr.concept_coverage))
             if qr.final_score is not None:
                 tech_scores.append(float(qr.final_score))
+            if qr.visual_analysis and isinstance(qr.visual_analysis, dict):
+                vis_val = qr.visual_analysis.get("attention_score") or qr.visual_analysis.get("overall_visual_score")
+                if vis_val is not None:
+                    try:
+                        visual_scores.append(float(vis_val))
+                    except (ValueError, TypeError):
+                        pass
 
     if total_count > 0:
         answer_quality = round(sum(rel_scores) / len(rel_scores), 1) if rel_scores else avg_score
         communication = round(sum(comm_scores) / len(comm_scores), 1) if comm_scores else avg_score
         question_perf = round(sum(tech_scores) / len(tech_scores), 1) if tech_scores else avg_score
         confidence = round(max(0.0, min(100.0, (communication * 0.55 + answer_quality * 0.45))), 1)
-        visual_presence = round(max(0.0, min(100.0, communication * 0.92)), 1)
+        visual_presence = round(sum(visual_scores) / len(visual_scores), 1) if visual_scores else round(max(0.0, min(100.0, communication * 0.92)), 1)
     else:
         answer_quality = 0.0
         communication = 0.0
@@ -256,7 +397,13 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
         sample = chronological[-7:] if len(chronological) > 7 else chronological
         trend_labels = [(i.completed_at or i.created_at).strftime("%b %d") for i in sample]
         trend_scores = [round(float(i.overall_score), 1) for i in sample]
-        trend_avg_benchmarks = [75.0] * len(trend_scores)
+        
+        # Real cumulative average across sessions
+        running_sum = 0.0
+        trend_avg_benchmarks = []
+        for idx, sc in enumerate(trend_scores):
+            running_sum += sc
+            trend_avg_benchmarks.append(round(running_sum / (idx + 1), 1))
     else:
         trend_labels = []
         trend_scores = []
@@ -328,6 +475,14 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
             "Retake sessions in specific topics until achieving 75%+ score consistency."
         ]
 
+    # Calculate Top Skills from real evaluation data
+    skills_list = [
+        {"name": "Communication", "score": communication},
+        {"name": "Technical Knowledge", "score": question_perf},
+        {"name": "Problem Solving", "score": answer_quality},
+        {"name": "Confidence", "score": confidence}
+    ]
+
     return {
         "user": {
             "id": current_user.id,
@@ -337,10 +492,11 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
         },
         "profile": {
             "name": (profile.name if profile else None) or current_user.full_name or "Candidate",
-            "education": (profile.education if profile else None) or "Technical Degree",
+            "education": (profile.education if profile else None) or "",
             "college": (profile.college if profile else None) or "",
             "target_role": (profile.target_role if profile else None) or "Software Engineer",
             "experience_type": (profile.experience_type if profile else None) or "Fresher",
+            "avatar_url": (profile.avatar_url if profile else None),
             "is_verified": True
         },
         "stats": {
@@ -366,12 +522,7 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
             "question_performance": question_perf,
             "confidence": confidence
         },
-        "skills": [
-            {"name": "Communication", "score": communication},
-            {"name": "Technical Knowledge", "score": question_perf},
-            {"name": "Answer Quality", "score": answer_quality},
-            {"name": "Confidence", "score": confidence}
-        ],
+        "skills": skills_list,
         "trend_chart": {
             "labels": trend_labels,
             "your_scores": trend_scores,
@@ -380,6 +531,7 @@ def _build_analytics_payload(current_user: User, profile: Optional[UserProfile],
         "insights": insights,
         "recommendations": recommendations,
         "interviews": recent_sessions,
+        "has_data": total_count > 0,
         "filter_days": days
     }
 

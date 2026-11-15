@@ -58,18 +58,41 @@ class UserProfileBase(BaseModel):
     parsed_resume: Optional[Dict[str, Any]] = None
     job_description: Optional[str] = None
     interview_difficulty: Optional[str] = "Intermediate"
+    avatar_url: Optional[str] = None
 
-    @field_validator("years_of_experience", mode="before")
+    @field_validator("name")
     @classmethod
-    def clean_floats(cls, v: Any) -> Optional[float]:
-        return sanitize_float(v)
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise ValueError("Candidate name cannot be empty")
+        return v.strip() if v else None
 
-    @field_validator("skills", mode="before")
+    @field_validator("years_of_experience")
+    @classmethod
+    def validate_years(cls, v: Any) -> Optional[float]:
+        val = sanitize_float(v)
+        if val is not None:
+            if val < 0.0 or val > 50.0:
+                raise ValueError("Years of experience must be between 0.0 and 50.0")
+            return round(val, 1)
+        return 0.0
+
+    @field_validator("skills", "programming_languages", mode="before")
     @classmethod
     def clean_skills(cls, v: Any) -> Optional[str]:
         if isinstance(v, list):
-            return ", ".join(str(s) for s in v if s)
-        return str(v) if v is not None else None
+            return ", ".join(str(s).strip() for s in v if s)
+        return str(v).strip() if v is not None else None
+
+    @field_validator("interview_difficulty")
+    @classmethod
+    def validate_difficulty(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            norm = v.capitalize()
+            if norm not in ["Beginner", "Intermediate", "Advanced"]:
+                raise ValueError("Interview difficulty must be 'Beginner', 'Intermediate', or 'Advanced'")
+            return norm
+        return "Intermediate"
 
 class UserProfileCreate(UserProfileBase):
     pass

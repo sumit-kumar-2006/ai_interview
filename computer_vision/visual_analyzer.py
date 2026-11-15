@@ -29,6 +29,8 @@ class VisualAnalysisResponse(BaseModel):
     expression_summary: str
     visual_attention_score: float
     message: str
+    eye_contact_percentage: Optional[float] = None
+    multiple_faces_detected: Optional[bool] = False
 
 
 def process_visual_observations(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -95,10 +97,14 @@ def process_visual_observations(data: Dict[str, Any]) -> Dict[str, Any]:
     # 5. Visual Attention Score (0-100)
     attention_score = round(max(0.0, min(100.0, (0.6 * face_presence_pct) + (0.4 * camera_attention_pct))), 1)
 
+    multiple_faces = int(data.get("multiple_face_events", 0)) > 0
+
     return {
         "status": "success",
         "face_presence_pct": face_presence_pct,
         "camera_attention_pct": camera_attention_pct,
+        "eye_contact_percentage": camera_attention_pct,
+        "multiple_faces_detected": multiple_faces,
         "looking_away_count": looking_away,
         "primary_orientation": primary_orientation,
         "head_pose_distribution": head_pose_distribution,

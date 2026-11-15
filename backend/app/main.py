@@ -4,7 +4,6 @@ from pydantic import BaseModel
 import joblib
 import numpy as np
 import pandas as pd
-import whisper
 import tempfile
 import os
 from contextlib import asynccontextmanager
@@ -14,7 +13,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from typing import Optional
 from sqlalchemy.orm import Session
-from speech.transcribe import parse_whisper_result
+from speech.transcribe import get_whisper_model, parse_whisper_result
 from backend.app.evaluator import AnswerEvaluator
 from nlp.answer_analyzer import extract_key_concepts
 from backend.app.questions import get_interview_questions, generate_personalized_questions
@@ -25,6 +24,7 @@ import backend.app.models  # Ensures all models (User, Interview, QuestionResult
 from backend.app.api import interviews, auth, profile, admin
 from backend.app.auth import get_current_user_optional
 from backend.app.audio_validator import validate_audio_recording, SafeTemporaryAudioFile
+from ml.rubric_utils import compute_concept_coverage, compute_keyword_alignment, compute_technical_depth
 
 
 MODEL_FILE = "ml/models/interview_scoring_model.pkl"
@@ -62,28 +62,54 @@ app.add_middleware(
 )
 
 # Include Database API Routers
+# Primary consistent /api namespace
+app.include_router(auth.router, prefix="/api")
+app.include_router(profile.router, prefix="/api")
+app.include_router(interviews.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
+
+# Backward-compatible un-prefixed routers for test suites
 app.include_router(auth.router)
-app.include_router(profile.router)
 app.include_router(interviews.router)
 app.include_router(admin.router)
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import RedirectResponse, Response, FileResponse
 
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():
     svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1677FF"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'
     return Response(content=svg, media_type="image/svg+xml")
 
+@app.get("/style.css", include_in_schema=False)
+def get_style_css():
+    return FileResponse("frontend/style.css", media_type="text/css")
+
+@app.get("/script.js", include_in_schema=False)
+def get_script_js():
+    return FileResponse("frontend/script.js", media_type="application/javascript")
+
+if os.path.exists("frontend/assets"):
+    app.mount("/assets", StaticFiles(directory="frontend/assets"), name="frontend_assets")
 
 if os.path.exists("frontend"):
-    app.mount("/frontend", StaticFiles(directory="frontend", html=True), name="frontend")
+    app.mount("/frontend", StaticFiles(directory="frontend", html=True), name="frontend_dir")
 
-@app.get("/")
-def root_redirect(request: Request):
-    qs = request.url.query
-    target = f"/frontend/?{qs}" if qs else "/frontend/"
-    return RedirectResponse(url=target)
+@app.get("/", include_in_schema=False)
+@app.get("/dashboard", include_in_schema=False)
+@app.get("/start-interview", include_in_schema=False)
+@app.get("/device-check", include_in_schema=False)
+@app.get("/interview", include_in_schema=False)
+@app.get("/results", include_in_schema=False)
+@app.get("/profile", include_in_schema=False)
+@app.get("/analytics", include_in_schema=False)
+@app.get("/reports", include_in_schema=False)
+@app.get("/admin", include_in_schema=False)
+def serve_spa():
+    return FileResponse("frontend/index.html", media_type="text/html")
+
+# Root mount for profile subpaths (e.g. /profile/analytics) for existing test suites
+app.include_router(profile.router)
 
 
 
@@ -98,8 +124,8 @@ scoring_model = joblib.load(MODEL_FILE)
 print("Loading embedding model...")
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-print("Loading Whisper model...")
-whisper_model = whisper.load_model("base")
+print("Loading faster-whisper model...")
+whisper_model = get_whisper_model()
 
 print("All models loaded.")
 
@@ -124,6 +150,7 @@ class ScoreRequest(BaseModel):
 # HEALTH
 # ==============================
 
+@app.get("/api/health")
 @app.get("/health")
 def health():
     return {
@@ -144,6 +171,7 @@ class QuestionsRequest(BaseModel):
     interview_type: Optional[str] = None
     parsed_resume: Optional[dict] = None
 
+@app.get("/api/interview/questions")
 @app.get("/interview/questions")
 def get_questions(
     count: int = Query(default=5, ge=1, le=20),
@@ -222,6 +250,7 @@ def get_questions(
     }
 
 
+@app.post("/api/interview/questions")
 @app.post("/interview/questions")
 def get_questions_post(
     req: QuestionsRequest,
@@ -332,6 +361,7 @@ def is_test_fallback_allowed() -> bool:
 # LEGACY TEXT SCORE
 # ==============================
 
+@app.post("/api/predict-score")
 @app.post("/predict-score")
 def predict_score(request: ScoreRequest):
     if not is_legacy_scoring_enabled():
@@ -354,10 +384,17 @@ def predict_score(request: ScoreRequest):
     reference_similarity = float(cosine_similarity(reference_embedding, answer_embedding)[0][0])
 
     sem_similarity_for_rf = reference_similarity if (request.reference_answer and request.reference_answer.strip()) else question_similarity
+    cov = compute_concept_coverage(request.question, request.candidate_answer)
+    align = compute_keyword_alignment(request.question, request.candidate_answer)
+    depth = compute_technical_depth(request.candidate_answer)
+
     features = pd.DataFrame([{
         "semantic_similarity": max(0.0, min(1.0, sem_similarity_for_rf)),
         "question_length": len(request.question),
-        "answer_length": len(request.candidate_answer)
+        "answer_length": len(request.candidate_answer),
+        "concept_coverage": cov,
+        "keyword_alignment": align,
+        "technical_depth": depth
     }])
 
     try:
@@ -391,6 +428,7 @@ class EvaluateAnswerRequest(BaseModel):
 # ANSWER EVALUATION (STAGE 2: SECURE MULTI-FACTOR EVALUATION)
 # ==============================
 
+@app.post("/api/evaluate-answer")
 @app.post("/evaluate-answer")
 def evaluate_answer(
     req: EvaluateAnswerRequest,
@@ -551,6 +589,7 @@ def evaluate_answer(
 # AUDIO RECORDING VALIDATION & UPLOAD (PART B STEP 4)
 # ==============================
 
+@app.post("/api/interview/audio/upload")
 @app.post("/interview/audio/upload")
 async def upload_interview_audio(
     audio: UploadFile = File(...),
@@ -619,6 +658,8 @@ async def upload_interview_audio(
 # AUDIO TRANSCRIPTION (PART B STEP 5 DECOUPLED STT)
 # ==============================
 
+@app.post("/api/transcribe-audio")
+@app.post("/api/interview/audio/transcribe")
 @app.post("/transcribe-audio")
 @app.post("/interview/audio/transcribe")
 async def transcribe_audio(
@@ -694,6 +735,7 @@ async def transcribe_audio(
 # AUDIO → TRANSCRIPT → SCORE
 # ==============================
 
+@app.post("/api/transcribe-and-score")
 @app.post("/transcribe-and-score")
 async def transcribe_and_score(
     audio: UploadFile = File(...),
@@ -832,6 +874,7 @@ async def transcribe_and_score(
             os.remove(temp_path)
 
 
+@app.post("/api/visual-analysis", response_model=VisualAnalysisResponse)
 @app.post("/visual-analysis", response_model=VisualAnalysisResponse)
 def analyze_visual_signals(req: VisualAnalysisRequest):
     """
@@ -843,12 +886,15 @@ def analyze_visual_signals(req: VisualAnalysisRequest):
 
 
 # ==============================
-# STATIC FILES (FRONTEND)
+# STATIC & UPLOADS FILES
 # ==============================
 from fastapi.staticfiles import StaticFiles
 
-if os.path.exists("frontend"):
-    app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+os.makedirs("uploads/resumes", exist_ok=True)
+os.makedirs("uploads/avatars", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
 
 
 

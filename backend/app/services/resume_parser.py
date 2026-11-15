@@ -184,16 +184,23 @@ def extract_skills_from_text(text: str) -> Dict[str, Any]:
     cloud = detected_by_category.get("Cloud & DevOps", [])
     ai = detected_by_category.get("AI, ML & Data Science", [])
     cyber = detected_by_category.get("Cybersecurity", [])
+    tools = detected_by_category.get("Developer Tools & Practices", [])
+
+    # Pure technical skills excluding programming languages to prevent duplication
+    langs_lower = set(l.lower() for l in langs)
+    tech_skills = [s for s in all_detected_skills if s.lower() not in langs_lower]
 
     return {
         "categorized": detected_by_category,
         "all_skills": all_detected_skills,
+        "tech_skills": tech_skills,
         "languages": langs,
         "frameworks": frameworks,
         "databases": databases,
         "cloud_devops": cloud,
         "ai_data_science": ai,
         "cybersecurity": cyber,
+        "developer_tools": tools,
         "total_skills_count": len(all_detected_skills)
     }
 
@@ -483,6 +490,8 @@ def parse_resume(file_input: Union[bytes, str], filename: str) -> Dict[str, Any]
         f"with practical implementation demonstrated in projects like '{proj_preview}'."
     )
 
+    tech_skills = skills_data.get("all_skills", [])
+
     return {
         "filename": safe_name,
         "candidate_name": cand_name,
@@ -492,8 +501,8 @@ def parse_resume(file_input: Union[bytes, str], filename: str) -> Dict[str, Any]
         "experience_type": exp_type,
         "experience_level": exp_type,
         "years_of_experience": years_exp,
-        "skills": skills_data["all_skills"],
-        "skills_text": ", ".join(skills_data["all_skills"]),
+        "skills": tech_skills,
+        "skills_text": ", ".join(tech_skills),
         "programming_languages": ", ".join(skills_data["languages"]),
         "frameworks": ", ".join(skills_data["frameworks"]),
         "databases": ", ".join(skills_data["databases"]),
@@ -502,6 +511,7 @@ def parse_resume(file_input: Union[bytes, str], filename: str) -> Dict[str, Any]
         "cybersecurity": ", ".join(skills_data["cybersecurity"]),
         "categorized_skills": skills_data["categorized"],
         "all_skills_list": skills_data["all_skills"],
+        "all_skills_text": ", ".join(skills_data["all_skills"]),
         "projects": projects,
         "projects_summary": "; ".join(f"{p['title']} ({p['tech_summary']})" for p in projects[:3]),
         "experiences": experiences,

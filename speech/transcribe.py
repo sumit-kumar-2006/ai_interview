@@ -1,21 +1,64 @@
+import os
 import sys
-import whisper
-
+import torch
+from faster_whisper import WhisperModel
 
 MODEL_NAME = "base"
 _whisper_model = None
 
 
+class FasterWhisperWrapper:
+    """
+    High-performance wrapper around faster-whisper CTranslate2 model.
+    Automatically detects CUDA (GPU) vs CPU, selects float16 / int8 quantization,
+    and returns dict output matching standard Whisper schema:
+    {
+        "text": str,
+        "segments": [{"start": float, "end": float, "text": str, "no_speech_prob": float}],
+        "language": str,
+        "duration": float
+    }
+    """
+    def __init__(self, model_size: str = MODEL_NAME):
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.compute_type = "float16" if self.device == "cuda" else "int8"
+        print(f"Loading faster-whisper ({model_size}) on {self.device} with {self.compute_type} quantization...")
+        self.model = WhisperModel(model_size, device=self.device, compute_type=self.compute_type)
+        print("faster-whisper model loaded.")
+
+    def transcribe(self, audio_path: str, beam_size: int = 1, **kwargs):
+        """
+        Transcribes the given audio file and returns a Whisper-compatible dictionary.
+        """
+        segments, info = self.model.transcribe(audio_path, beam_size=beam_size, **kwargs)
+        seg_list = []
+        text_parts = []
+        for s in segments:
+            clean_text = s.text.strip()
+            if clean_text:
+                text_parts.append(clean_text)
+            seg_list.append({
+                "start": float(s.start),
+                "end": float(s.end),
+                "text": clean_text,
+                "no_speech_prob": float(s.no_speech_prob)
+            })
+
+        full_text = " ".join(text_parts).strip()
+        return {
+            "text": full_text,
+            "segments": seg_list,
+            "language": getattr(info, "language", "en"),
+            "duration": getattr(info, "duration", 0.0)
+        }
+
+
 def get_whisper_model():
+    """Singleton getter for faster-whisper model."""
     global _whisper_model
     if _whisper_model is None:
-        print("Loading Whisper model...")
-        _whisper_model = whisper.load_model(MODEL_NAME)
-        print("Whisper model loaded.")
+        _whisper_model = FasterWhisperWrapper(MODEL_NAME)
     return _whisper_model
-
-
-model = None
 
 
 def parse_whisper_result(result):
@@ -59,7 +102,6 @@ def transcribe_audio(audio_path, whisper_model=None):
 
 
 if __name__ == "__main__":
-
     if len(sys.argv) < 2:
         print("Usage:")
         print("python speech/transcribe.py <audio_file>")
@@ -68,9 +110,8 @@ if __name__ == "__main__":
     audio_path = sys.argv[1]
 
     print("\n========================================")
-    print("       SPEECH TO TEXT")
+    print("       FASTER-WHISPER SPEECH TO TEXT")
     print("========================================")
-
     print("Audio:", audio_path)
     print("\nTranscribing...")
 

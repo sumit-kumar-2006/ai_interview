@@ -1,0 +1,52 @@
+{
+    "model_type": "EnhancedRandomForestRegressor",
+    "training_records": 2651,
+    "dataset_breakdown": {
+        "academic_records": 1264,
+        "huggingface_interview_coach_records": 1227,
+        "hard_negative_records": 160
+    },
+    "n_estimators": 350,
+    "max_depth": 10,
+    "feature_columns": [
+        "semantic_similarity",
+        "question_length",
+        "answer_length",
+        "concept_coverage",
+        "keyword_alignment",
+        "technical_depth"
+    ],
+    "cross_validation_5_fold": {
+        "mean_mae": 0.472,
+        "mean_rmse": 0.9436,
+        "mean_r2": 0.9976,
+        "fold_maes": [
+            0.4828,
+            0.4558,
+            0.4532,
+            0.4963,
+            0.4718
+        ],
+        "fold_r2s": [
+            0.9976,
+            0.999,
+            0.9984,
+            0.994,
+            0.999
+        ]
+    },
+    "test_metrics": {
+        "mae": 0.4798,
+        "rmse": 0.6596,
+        "r2": 0.9985,
+        "sample_count": 272
+    },
+    "feature_importances": {
+        "semantic_similarity": 0.4187,
+        "question_length": 0.0002,
+        "answer_length": 0.04,
+        "concept_coverage": 0.2529,
+        "keyword_alignment": 0.2843,
+        "technical_depth": 0.004
+    }
+}

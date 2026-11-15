@@ -52,6 +52,7 @@ class UserProfile(Base):
     parsed_resume = Column(JSON, nullable=True)
     job_description = Column(Text, nullable=True)
     interview_difficulty = Column(String(50), default="Intermediate", nullable=True)
+    avatar_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

@@ -98,8 +98,8 @@ def ensure_schema_updates():
                 cursor.execute("ALTER TABLE users ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0;")
                 print("'is_admin' column added successfully.")
 
-            # Check resume columns on user_profiles
-            for col_name, col_type in [("resume_filename", "VARCHAR(255) NULL"), ("parsed_resume", "JSON NULL")]:
+            # Check resume & avatar columns on user_profiles
+            for col_name, col_type in [("resume_filename", "VARCHAR(255) NULL"), ("parsed_resume", "JSON NULL"), ("avatar_url", "VARCHAR(500) NULL")]:
                 cursor.execute(
                     "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'user_profiles' AND COLUMN_NAME = %s",
                     (DB_NAME, col_name)

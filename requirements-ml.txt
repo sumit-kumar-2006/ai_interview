@@ -1,0 +1,33 @@
+# AI Interview Analyzer - Machine Learning, Audio, Vision & Model Training Dependencies
+# Tested on Python 3.11 with CPU & CUDA support
+
+# Core Scientific Computing
+numpy==2.4.6
+scipy==1.17.1
+scikit-learn==1.9.0
+
+# Deep Learning & NLP Pipelines
+torch==2.13.0
+transformers==5.15.0
+sentence-transformers==5.7.0
+tiktoken==0.14.0
+nltk==3.10.3
+spacy==3.8.15
+
+# Speech-to-Text & Audio Feature Extraction
+openai-whisper==20250625
+faster-whisper==1.2.1
+ctranslate2==4.8.1
+soundfile==0.14.0
+librosa==0.11.0
+
+# Computer Vision, Facial Mesh & Gaze Tracking
+opencv-python==5.0.0.93
+mediapipe==1.2.3
+
+# ML Training, Dataset Processing & Evaluation Metrics
+evaluate==0.4.6
+datasets==5.0.1
+matplotlib==3.11.1
+seaborn==0.13.2
+
