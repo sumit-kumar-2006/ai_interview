@@ -540,3 +540,35 @@ By executing the structured 5-phase repair sequence outlined above, the entire p
 
 **Awaiting Client Approval Before Proceeding with Any Source Code Changes.**
 
+---
+
+## 11. MACHINE LEARNING, DATASET & MULTIMODAL SUBSYSTEM AUDIT
+
+A rigorous audit of the Machine Learning, Speech Processing, and Computer Vision pipelines was conducted:
+
+### 11.1. Machine Learning Models & Algorithms
+1. **SentenceTransformer (`all-MiniLM-L6-v2`):**
+   - Produces 384-dimensional dense semantic vectors.
+   - Cosine similarity calculation is mathematically continuous in $[-1.0, 1.0]$. The empirical minimum in training data is $-0.0043$. Bounded to $[0.0, 1.0]$ in inference.
+2. **Random Forest Regressor (`interview_scoring_model.pkl`):**
+   - Architecture: 350 decision trees, `max_depth=10`, trained on 2,651 multi-source Q&A pairs.
+   - 6 Input Features: `semantic_similarity`, `question_length`, `answer_length`, `concept_coverage`, `keyword_alignment`, `technical_depth`.
+   - Performance: 5-Fold Cross-Validation MAE = 0.472, Test MAE = 0.4798, RMSE = 0.6596, $R^2 = 0.9985$.
+   - Nature: Non-linear approximation of an institutional multi-criteria evaluation rubric.
+3. **Academic Classification Practical Models (`ml/train_academic_models.py`):**
+   - Algorithms: K-Nearest Neighbors ($k=5$), Support Vector Machine (RBF kernel, $C=10.0$), Decision Tree ($max\_depth=5$).
+   - Target Definition: Provisional rule-based threshold $\text{semantic\_similarity} \ge 0.70 \land \text{word\_count} \ge 20$.
+   - Leakage Audit: Target leakage in Experiment A verified and documented; ablated Experiment B demonstrates realistic baseline generalization.
+4. **Unsupervised K-Means Clustering (`ml/clustering/`):**
+   - Tested $k \in [2, 10]$, optimal $k=3$ with silhouette score `0.2311`.
+   - Cluster 0: Extended/Substantive ($N=323$, mean words: 20.0).
+   - Cluster 1: Low Alignment/Divergent ($N=325$, mean words: 15.4, 0% Class 1).
+   - Cluster 2: Concise Technical ($N=616$, mean words: 17.2, high avg word length: 6.83).
+   - PCA 2D visualization captures 65.91% of total standardized feature variance (PC1: 39.08%, PC2: 26.83%).
+
+### 11.2. Multimodal Decoupling & Architecture
+- **Speech Processing (Faster-Whisper):** Decoupled from grading. Performs container and duration validation, transcribes audio to verbatim text, and calculates speech pacing (WPM) and filler word distribution.
+- **Computer Vision (MediaPipe Face Mesh):** Decoupled from text NLP. Computes real-time head pose (pitch/yaw/roll) and gaze stability across 478 3D facial landmarks.
+- **Unified Multimodal Reporting:** The FastAPI application gateway combines text technical scoring (RF regressor), speech metrics (Whisper), and visual metrics (MediaPipe) into an interactive composite assessment without coupling raw audio/video tensors into the tabular Random Forest model.
+
+

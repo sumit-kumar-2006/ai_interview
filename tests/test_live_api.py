@@ -7,7 +7,7 @@ def get_api_client():
     base_url = "http://127.0.0.1:8000"
     try:
         r = requests.get(f"{base_url}/health", timeout=0.5)
-        if r.status_code == 200:
+        if r.status_code == 200 and r.json().get("service") == "AI Interview Analyzer":
             return requests, base_url
     except Exception:
         pass
